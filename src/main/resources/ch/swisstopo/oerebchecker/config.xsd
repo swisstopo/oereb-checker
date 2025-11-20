@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="qualified"
+           targetNamespace="https://www.w3schools.com/"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns="https://www.w3schools.com/">
+    <xs:element name="Config">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="BasicUrl"/>
+                <xs:element ref="OutputDirectoryPath"/>
+                <xs:element maxOccurs="unbounded" ref="GetVersions"/>
+                <xs:element maxOccurs="unbounded" ref="GetCapabilities"/>
+                <xs:element maxOccurs="unbounded" ref="GetEGRID"/>
+                <xs:element maxOccurs="unbounded" ref="GetExtractById"/>
+            </xs:sequence>
+            <xs:attribute ref="xsi:schemaLocation" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="BasicUrl" type="xs:anyURI"/>
+    <xs:element name="OutputDirectoryPath" type="xs:anyURI"/>
+    <xs:element name="GetCapabilities">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="FORMAT"/>
+                <xs:element ref="ExpectedStatusCode"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="GetEGRID">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="FORMAT"/>
+                <xs:choice minOccurs="0">
+                    <xs:element ref="EN"/>
+                    <xs:element ref="GNSS"/>
+                </xs:choice>
+                <xs:choice minOccurs="0">
+                    <xs:element ref="IDENTDN"/>
+                    <xs:sequence>
+                        <xs:element ref="POSTALCODE"/>
+                        <xs:element ref="LOCALISATION"/>
+                    </xs:sequence>
+                </xs:choice>
+                <xs:element minOccurs="0" ref="NUMBER"/>
+                <xs:element ref="ExpectedStatusCode"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="EN" type="xs:string"/>
+    <xs:element name="GNSS" type="xs:string"/>
+    <xs:element name="POSTALCODE" type="xs:integer"/>
+    <xs:element name="LOCALISATION" type="xs:NCName"/>
+    <xs:element name="GetExtractById">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="FORMAT"/>
+                <xs:choice>
+                    <xs:element ref="EGRID"/>
+                    <xs:element maxOccurs="unbounded" ref="EGRIDS"/>
+                    <xs:sequence>
+                        <xs:element ref="IDENTDN"/>
+                        <xs:element ref="NUMBER"/>
+                    </xs:sequence>
+                </xs:choice>
+                <xs:element minOccurs="0" ref="ExpectedStatusCode"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="EGRID" type="xs:NCName"/>
+    <xs:element name="EGRIDS" type="xs:NCName"/>
+    <xs:element name="GetVersions">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="FORMAT"/>
+                <xs:element ref="ExpectedStatusCode"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="FORMAT" type="xs:NCName"/>
+    <xs:element name="ExpectedStatusCode" type="xs:integer"/>
+    <xs:element name="IDENTDN" type="xs:NCName"/>
+    <xs:element name="NUMBER" type="xs:integer"/>
+</xs:schema>

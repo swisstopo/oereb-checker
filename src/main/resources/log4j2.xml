@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xmlns="https://logging.apache.org/xml/ns"
+               xsi:schemaLocation="
+                       https://logging.apache.org/xml/ns
+                       https://logging.apache.org/xml/ns/log4j-config-2.xsd">
+
+    <Appenders>
+        <Console name="CONSOLE">
+            <PatternLayout pattern="%d %p %c - %m%n"/>
+        </Console>
+        <File name="FILE" fileName="out/logs/main.log">
+            <PatternLayout pattern="%d %p %c - %m%n"/>
+        </File>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="org.verapdf" level="ERROR"/>
+        <Logger name="ch.swisstopo" level="INFO"/>
+        <Root level="ERROR">
+            <AppenderRef ref="CONSOLE"/>
+            <AppenderRef ref="FILE"/>
+        </Root>
+    </Loggers>
+
+</Configuration>

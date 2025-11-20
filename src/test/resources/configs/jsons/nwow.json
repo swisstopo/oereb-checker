@@ -1,0 +1,8 @@
+{
+  "BasicUrl": "https://www.gis-daten.ch/oereb-dev",
+  "Threads": 1,
+  "OutputDirectoryPath": "out\\results\\nwow\\",
+  "GetExtractById": [
+    {"FORMAT": "xml","EGRID": "CH410572347782", "ExpectedStatusCode": 200 }
+  ]
+}
