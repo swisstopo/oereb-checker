@@ -1,0 +1,50 @@
+name: "Docker Build and Push to ECR"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docker-oereb/**'
+  # pull_request:
+  workflow_dispatch:
+
+
+permissions:
+  id-token: write
+  contents: write
+  # pull-requests: write
+
+# env:
+#   AWS_REGION: ${{ secrets.AWS_REGION }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: eu-central-1
+      AWS_ACCOUNT_ID: "445236799088"
+      ECR_REPOSITORY: oereb-runner
+      IMAGE_TAG: latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # - name: Build and push Docker image
+      #   uses: docker/build-push-action@v6
+      #   with:
+      #     context: ./docker-oereb              # Folder that contains your Dockerfile
+      #     push: true
+      #     tags: |
+      #       ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
