@@ -141,6 +141,18 @@
             <version>${org.junit.jupiter.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- AWS Lambda Dependencies -->
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-lambda-java-core</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-lambda-java-events</artifactId>
+            <version>3.11.0</version>
+        </dependency>
     </dependencies>
 
     <build>

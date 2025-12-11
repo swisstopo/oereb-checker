@@ -35,7 +35,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-
 public class OerebChecker {
     protected static final Logger logger = LoggerFactory.getLogger(OerebChecker.class);
 
@@ -54,7 +53,6 @@ public class OerebChecker {
 
     private static Path outputDirectoryPath = Path.of("").toAbsolutePath().resolve("output");
 
-
     public static void main(String[] args) {
         try {
             if (initialise(args)) {
@@ -65,66 +63,104 @@ public class OerebChecker {
                     return;
                 }
 
-                int threadCount = 1;
-                if (config.Threads != null) {
-                    threadCount = config.Threads;
-                }
-
-                try (ExecutorService executor = Executors.newFixedThreadPool(threadCount)) {
-
-                    List<CompletableFuture<CheckResult>> completableFutures = new ArrayList<>();
-
-                    URI basicUri = URI.create(config.BasicUrl);
-                    if (config.OutputDirectoryPath != null) {
-                        outputDirectoryPath = Paths.get(config.OutputDirectoryPath).toAbsolutePath();
-                        logger.info("Output directory path set to: {}", outputDirectoryPath);
-                    }
-                    if (config.GetVersions != null) {
-                        for (var checkConfig : config.GetVersions) {
-                            completableFutures.add(CompletableFuture.supplyAsync(() -> new GetVersions(basicUri, checkConfig).run(), executor));
-                        }
-                    }
-                    if (config.GetCapabilities != null) {
-                        for (var checkConfig : config.GetCapabilities) {
-                            completableFutures.add(CompletableFuture.supplyAsync(() -> new GetCapabilities(basicUri, checkConfig).run(), executor));
-                        }
-                    }
-                    if (config.GetEGRID != null) {
-                        for (var checkConfig : config.GetEGRID) {
-                            completableFutures.add(CompletableFuture.supplyAsync(() -> new GetEGRID(basicUri, checkConfig).run(), executor));
-                        }
-                    }
-                    if (config.GetExtractById != null) {
-                        for (var checkConfig : config.GetExtractById) {
-                            completableFutures.add(CompletableFuture.supplyAsync(() -> new GetExtractById(basicUri, checkConfig).run(), executor));
-                        }
-                    }
-
-                    CompletableFuture<Void> allFutures = CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0]));
-                    allFutures.thenRun(() -> {
-
-                        Result result = new Result();
-                        for (var check : completableFutures) {
-                            try {
-                                result.addCheckResult(check.get());
-                            } catch (InterruptedException | ExecutionException e) {
-                                logger.error(e.getCause().getMessage(), e);
-                            }
-                        }
-
-                        writeResults(result);
-
-                    }).exceptionally(throwable -> {
-                        logger.error(throwable.getMessage(), throwable);
-                        return null;
-                    });
-                    allFutures.join();
-
-                    executor.shutdown();
-                } // Create a custom thread pool
+                runChecks(config);
             }
         } catch (Exception ex) {
             logger.error(ex.getMessage(), ex);
+        }
+    }
+
+    private static String resultsBucketName = null;
+
+    public static void runSingleCheck(String s3ScriptsBucket, String s3ResultsBucket, String s3Key, String s3Region) {
+        // Setup S3 Storage manually
+        if (s3Region == null)
+            s3Region = "eu-central-1";
+
+        // We initialize S3Storage with the scripts bucket as default, but we'll use
+        // overrides
+        s3Storage = new S3Storage(s3Region, s3ScriptsBucket);
+        resultsBucketName = s3ResultsBucket;
+
+        // Load Config using the key and specific bucket
+        byte[] configData = s3Storage.GetBucketObject(s3ScriptsBucket, s3Key);
+        if (configData == null) {
+            logger.error("Could not load config from S3: {}/{}", s3ScriptsBucket, s3Key);
+            return;
+        }
+
+        Config config = parseConfigData(configData, s3Key);
+        if (config != null) {
+            runChecks(config);
+        }
+    }
+
+    private static void runChecks(Config config) {
+        int threadCount = 1;
+        if (config.Threads != null) {
+            threadCount = config.Threads;
+        }
+
+        try (ExecutorService executor = Executors.newFixedThreadPool(threadCount)) {
+
+            List<CompletableFuture<CheckResult>> completableFutures = new ArrayList<>();
+
+            URI basicUri = URI.create(config.BasicUrl);
+            if (config.OutputDirectoryPath != null) {
+                outputDirectoryPath = Paths.get(config.OutputDirectoryPath).toAbsolutePath();
+                logger.info("Output directory path set to: {}", outputDirectoryPath);
+            } else {
+                // Ensure we have a writable path for Lambda
+                outputDirectoryPath = Path.of("/tmp/output");
+            }
+
+            if (config.GetVersions != null) {
+                for (var checkConfig : config.GetVersions) {
+                    completableFutures.add(CompletableFuture
+                            .supplyAsync(() -> new GetVersions(basicUri, checkConfig).run(), executor));
+                }
+            }
+            if (config.GetCapabilities != null) {
+                for (var checkConfig : config.GetCapabilities) {
+                    completableFutures.add(CompletableFuture
+                            .supplyAsync(() -> new GetCapabilities(basicUri, checkConfig).run(), executor));
+                }
+            }
+            if (config.GetEGRID != null) {
+                for (var checkConfig : config.GetEGRID) {
+                    completableFutures.add(
+                            CompletableFuture.supplyAsync(() -> new GetEGRID(basicUri, checkConfig).run(), executor));
+                }
+            }
+            if (config.GetExtractById != null) {
+                for (var checkConfig : config.GetExtractById) {
+                    completableFutures.add(CompletableFuture
+                            .supplyAsync(() -> new GetExtractById(basicUri, checkConfig).run(), executor));
+                }
+            }
+
+            CompletableFuture<Void> allFutures = CompletableFuture
+                    .allOf(completableFutures.toArray(new CompletableFuture[0]));
+            allFutures.thenRun(() -> {
+
+                Result result = new Result();
+                for (var check : completableFutures) {
+                    try {
+                        result.addCheckResult(check.get());
+                    } catch (InterruptedException | ExecutionException e) {
+                        logger.error(e.getCause().getMessage(), e);
+                    }
+                }
+
+                writeResults(result);
+
+            }).exceptionally(throwable -> {
+                logger.error(throwable.getMessage(), throwable);
+                return null;
+            });
+            allFutures.join();
+
+            executor.shutdown();
         }
     }
 
@@ -136,7 +172,7 @@ public class OerebChecker {
 
             logger.info("params:");
             logger.info("   -cFP -> config file path");
-            //logger.info("   -oDP -> output directory path");
+            // logger.info(" -oDP -> output directory path");
 
             return false;
         }
@@ -161,8 +197,7 @@ public class OerebChecker {
 
             if (s3RegionName == null || s3RegionName.isBlank() ||
                     s3BucketName == null || s3BucketName.isBlank() ||
-                    configFilePathString == null || configFilePathString.isBlank()
-            ) {
+                    configFilePathString == null || configFilePathString.isBlank()) {
                 logEntryBuilder.delete(0, logEntryBuilder.length());
                 logEntryBuilder.append("No value for environment variable/s:");
 
@@ -183,8 +218,7 @@ public class OerebChecker {
             } else {
 
                 if (s3AccessKey == null || s3AccessKey.isBlank() ||
-                        s3SecretKey == null || s3SecretKey.isBlank()
-                ) {
+                        s3SecretKey == null || s3SecretKey.isBlank()) {
                     logEntryBuilder.delete(0, logEntryBuilder.length());
                     logEntryBuilder.append("No value for environment variable/s:");
 
@@ -219,41 +253,45 @@ public class OerebChecker {
                     }
                 }
                 /*
-                if (entry.getKey().equals("-oDP")) {
-                    try {
-                        outputDirectoryPath = Paths.get(entry.getValue());
-                    } catch (InvalidPathException e) {
-                        logger.error("Can not read output directory path: {}", entry.getValue(), e);
-                    }
-                }
-                */
+                 * if (entry.getKey().equals("-oDP")) {
+                 * try {
+                 * outputDirectoryPath = Paths.get(entry.getValue());
+                 * } catch (InvalidPathException e) {
+                 * logger.error("Can not read output directory path: {}", entry.getValue(), e);
+                 * }
+                 * }
+                 */
             }
         }
 
         if (configData != null) {
-
-            String configContent = new String(configData, StandardCharsets.UTF_8);
-            if (configFilePathString.toLowerCase().endsWith(".json")) {
-                try {
-                    Gson gson = new Gson();
-                    return gson.fromJson(configContent, Config.class);
-                } catch (JsonSyntaxException e) {
-                    throw new RuntimeException(e);
-                }
-            } else if (configFilePathString.toLowerCase().endsWith(".xml")) {
-                Config config;
-                try {
-                    StringReader sr = new StringReader(configContent);
-                    JAXBContext jaxbContext = JAXBContext.newInstance(Config.class);
-                    Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
-                    config = (Config) unmarshaller.unmarshal(sr);
-                } catch (JAXBException e) {
-                    throw new RuntimeException(e);
-                }
-                return config;
-            }
+            return parseConfigData(configData, configFilePathString);
         }
 
+        return null;
+    }
+
+    private static Config parseConfigData(byte[] configData, String configFilePathString) {
+        String configContent = new String(configData, StandardCharsets.UTF_8);
+        if (configFilePathString.toLowerCase().endsWith(".json")) {
+            try {
+                Gson gson = new Gson();
+                return gson.fromJson(configContent, Config.class);
+            } catch (JsonSyntaxException e) {
+                throw new RuntimeException(e);
+            }
+        } else if (configFilePathString.toLowerCase().endsWith(".xml")) {
+            Config config;
+            try {
+                StringReader sr = new StringReader(configContent);
+                JAXBContext jaxbContext = JAXBContext.newInstance(Config.class);
+                Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+                config = (Config) unmarshaller.unmarshal(sr);
+            } catch (JAXBException e) {
+                throw new RuntimeException(e);
+            }
+            return config;
+        }
         return null;
     }
 
@@ -273,11 +311,12 @@ public class OerebChecker {
         String resultJson = result.getJson();
 
         String resultHtmlPage = readResultHtmlTemplate();
-        if(resultHtmlPage != null) {
+        if (resultHtmlPage != null) {
 
             String resultHtmlTableRows = result.getHtmlTableRows();
             String resultHtmlCss = readResultHtmlCss();
-            resultHtmlPage = resultHtmlPage.replace("#inlineCssPlaceholder", resultHtmlCss != null ? resultHtmlCss : "");
+            resultHtmlPage = resultHtmlPage.replace("#inlineCssPlaceholder",
+                    resultHtmlCss != null ? resultHtmlCss : "");
             resultHtmlPage = resultHtmlPage.replace("#executionDatePlaceHolder", result.ExecutionDate);
             resultHtmlPage = resultHtmlPage.replace("#tableRowsPlaceHolder", resultHtmlTableRows);
         }
@@ -295,7 +334,11 @@ public class OerebChecker {
                 bw.close();
 
                 if (s3Storage != null) {
-                    s3Storage.PutBucketObject(outputJsonFilePath);
+                    if (resultsBucketName != null) {
+                        s3Storage.PutBucketObject(resultsBucketName, outputJsonFilePath);
+                    } else {
+                        s3Storage.PutBucketObject(outputJsonFilePath);
+                    }
                 }
 
             } catch (IOException ex) {
@@ -311,7 +354,11 @@ public class OerebChecker {
                 bw.close();
 
                 if (s3Storage != null) {
-                    s3Storage.PutBucketObject(outputJsonFilePath);
+                    if (resultsBucketName != null) {
+                        s3Storage.PutBucketObject(resultsBucketName, outputHtmlFilePath);
+                    } else {
+                        s3Storage.PutBucketObject(outputHtmlFilePath);
+                    }
                 }
 
             } catch (IOException ex) {
@@ -353,9 +400,10 @@ public class OerebChecker {
     private static String readResultHtmlTemplate() {
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
         try (InputStream is = classLoader.getResourceAsStream("ch/swisstopo/oerebchecker/result.html")) {
-            if (is == null) return null;
+            if (is == null)
+                return null;
             try (InputStreamReader isr = new InputStreamReader(is);
-                 BufferedReader reader = new BufferedReader(isr)) {
+                    BufferedReader reader = new BufferedReader(isr)) {
                 return reader.lines().collect(Collectors.joining(System.lineSeparator()));
             }
         } catch (Exception e) {
@@ -367,9 +415,10 @@ public class OerebChecker {
     private static String readResultHtmlCss() {
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
         try (InputStream is = classLoader.getResourceAsStream("ch/swisstopo/oerebchecker/result.css")) {
-            if (is == null) return null;
+            if (is == null)
+                return null;
             try (InputStreamReader isr = new InputStreamReader(is);
-                 BufferedReader reader = new BufferedReader(isr)) {
+                    BufferedReader reader = new BufferedReader(isr)) {
                 return reader.lines().collect(Collectors.joining(System.lineSeparator()));
             }
         } catch (Exception e) {
