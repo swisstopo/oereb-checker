@@ -7,6 +7,7 @@
     <xs:element name="Config">
         <xs:complexType>
             <xs:sequence>
+                <xs:element minOccurs="0" ref="Canton" />
                 <xs:element ref="BasicUrl"/>
                 <xs:element ref="OutputDirectoryPath"/>
                 <xs:element maxOccurs="unbounded" ref="GetVersions"/>
@@ -17,6 +18,7 @@
             <xs:attribute ref="xsi:schemaLocation" use="required"/>
         </xs:complexType>
     </xs:element>
+    <xs:element name="Canton" type="xs:string"/>
     <xs:element name="BasicUrl" type="xs:anyURI"/>
     <xs:element name="OutputDirectoryPath" type="xs:anyURI"/>
     <xs:element name="GetCapabilities">

@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns="http://www.interlis.ch/INTERLIS2.3"
+            targetNamespace="http://www.interlis.ch/INTERLIS2.3"
+            elementFormDefault="qualified">
+
+    <xsd:element name="TRANSFER" type="TransferType"/>
+
+    <xsd:complexType name="TransferType">
+        <xsd:sequence>
+            <xsd:element name="HEADERSECTION" type="HeaderSectionType"/>
+            <xsd:element name="DATASECTION" type="DataSectionType"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="HeaderSectionType">
+        <xsd:sequence>
+            <xsd:element name="MODELS">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="MODEL">
+                            <xsd:complexType>
+                                <xsd:attribute name="NAME" type="xsd:string" use="required"/>
+                                <xsd:attribute name="VERSION" type="xsd:string" use="required"/>
+                                <xsd:attribute name="URI" type="xsd:anyURI" use="required"/>
+                            </xsd:complexType>
+                        </xsd:element>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="COMMENT" type="xsd:string" minOccurs="0"/>
+        </xsd:sequence>
+        <xsd:attribute name="SENDER" type="xsd:string" use="required"/>
+        <xsd:attribute name="VERSION" type="xsd:decimal" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="DataSectionType">
+        <xsd:sequence>
+            <xsd:element name="OeREBKRM_V2_0.Dokumente" type="DokumenteBasketType"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="DokumenteBasketType">
+        <xsd:sequence>
+            <xsd:element name="OeREBKRM_V2_0.Dokumente.Dokument" type="DokumentType" minOccurs="0" maxOccurs="unbounded"/>
+            <xsd:element name="OeREBKRM_V2_0.Amt.Amt" type="AmtType" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+        <xsd:attribute name="BID" type="xsd:string" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="DokumentType">
+        <xsd:sequence>
+            <xsd:element name="Typ" type="xsd:string"/>
+            <xsd:element name="Titel" type="MultilingualTextType"/>
+            <xsd:element name="Abkuerzung" type="MultilingualTextType" minOccurs="0"/>
+            <xsd:element name="OffizielleNr" type="MultilingualTextType"/>
+            <xsd:element name="TextImWeb" type="MultilingualUriType"/>
+            <xsd:element name="AuszugIndex" type="xsd:unsignedShort" minOccurs="0"/>
+            <xsd:element name="Rechtsstatus" type="xsd:string"/>
+            <xsd:element name="PubliziertAb" type="xsd:date"/>
+            <xsd:element name="ZustaendigeStelle">
+                <xsd:complexType>
+                    <xsd:attribute name="REF" type="xsd:string" use="required"/>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:sequence>
+        <xsd:attribute name="TID" type="xsd:string" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="MultilingualTextType">
+        <xsd:sequence>
+            <xsd:element name="LocalisationCH_V1.MultilingualText">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="LocalisedText" maxOccurs="unbounded">
+                            <xsd:complexType>
+                                <xsd:sequence>
+                                    <xsd:element name="LocalisationCH_V1.LocalisedText">
+                                        <xsd:complexType>
+                                            <xsd:sequence>
+                                                <xsd:element name="Language" type="xsd:string"/>
+                                                <xsd:element name="Text" type="xsd:string"/>
+                                            </xsd:sequence>
+                                        </xsd:complexType>
+                                    </xsd:element>
+                                </xsd:sequence>
+                            </xsd:complexType>
+                        </xsd:element>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="MultilingualUriType">
+        <xsd:sequence>
+            <xsd:element name="OeREBKRM_V2_0.MultilingualUri">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="LocalisedText" maxOccurs="unbounded">
+                            <xsd:complexType>
+                                <xsd:sequence>
+                                    <xsd:element name="OeREBKRM_V2_0.LocalisedUri">
+                                        <xsd:complexType>
+                                            <xsd:sequence>
+                                                <xsd:element name="Language" type="xsd:string"/>
+                                                <xsd:element name="Text" type="xsd:anyURI"/>
+                                            </xsd:sequence>
+                                        </xsd:complexType>
+                                    </xsd:element>
+                                </xsd:sequence>
+                            </xsd:complexType>
+                        </xsd:element>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="AmtType">
+        <xsd:sequence>
+            <xsd:element name="Name" type="MultilingualTextType"/>
+            <xsd:element name="AmtImWeb" type="MultilingualUriType"/>
+            <xsd:element name="UID" type="xsd:string" minOccurs="0"/>
+        </xsd:sequence>
+        <xsd:attribute name="TID" type="xsd:string" use="required"/>
+    </xsd:complexType>
+</xsd:schema>

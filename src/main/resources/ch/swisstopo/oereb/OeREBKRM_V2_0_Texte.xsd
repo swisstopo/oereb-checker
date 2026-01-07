@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="http://www.interlis.ch/INTERLIS2.3" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+<xs:element name="TRANSFER">
+    <xs:complexType>
+        <xs:sequence>
+            <xs:element name="HEADERSECTION">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="MODELS">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element maxOccurs="unbounded" name="MODEL">
+                                        <xs:complexType>
+                                            <xs:attribute name="NAME" type="xs:string" use="required" />
+                                            <xs:attribute name="VERSION" type="xs:date" use="required" />
+                                            <xs:attribute name="URI" type="xs:string" use="required" />
+                                        </xs:complexType>
+                                    </xs:element>
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                        <xs:element name="COMMENT" type="xs:string" />
+                    </xs:sequence>
+                    <xs:attribute name="SENDER" type="xs:string" use="required" />
+                    <xs:attribute name="VERSION" type="xs:decimal" use="required" />
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="DATASECTION">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="OeREBKRMkvs_V2_0.Konfiguration">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element maxOccurs="unbounded" name="OeREBKRMkvs_V2_0.Konfiguration.RechtsStatusTxt">
+                                        <xs:complexType>
+                                            <xs:sequence>
+                                                <xs:element name="Code" type="xs:string" />
+                                                <xs:element name="Titel">
+                                                    <xs:complexType>
+                                                        <xs:sequence>
+                                                            <xs:element name="LocalisationCH_V1.MultilingualText">
+                                                                <xs:complexType>
+                                                                    <xs:sequence>
+                                                                        <xs:element name="LocalisedText">
+                                                                            <xs:complexType>
+                                                                                <xs:sequence>
+                                                                                    <xs:element maxOccurs="unbounded" name="LocalisationCH_V1.LocalisedText">
+                                                                                        <xs:complexType>
+                                                                                            <xs:sequence>
+                                                                                                <xs:element name="Language" type="xs:string" />
+                                                                                                <xs:element name="Text" type="xs:string" />
+                                                                                            </xs:sequence>
+                                                                                        </xs:complexType>
+                                                                                    </xs:element>
+                                                                                </xs:sequence>
+                                                                            </xs:complexType>
+                                                                        </xs:element>
+                                                                    </xs:sequence>
+                                                                </xs:complexType>
+                                                            </xs:element>
+                                                        </xs:sequence>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                            </xs:sequence>
+                                            <xs:attribute name="TID" type="xs:unsignedByte" use="required" />
+                                        </xs:complexType>
+                                    </xs:element>
+                                    <xs:element maxOccurs="unbounded" name="OeREBKRMkvs_V2_0.Konfiguration.DokumentTypTxt">
+                                        <xs:complexType>
+                                            <xs:sequence>
+                                                <xs:element name="Code" type="xs:string" />
+                                                <xs:element name="Titel">
+                                                    <xs:complexType>
+                                                        <xs:sequence>
+                                                            <xs:element name="LocalisationCH_V1.MultilingualText">
+                                                                <xs:complexType>
+                                                                    <xs:sequence>
+                                                                        <xs:element name="LocalisedText">
+                                                                            <xs:complexType>
+                                                                                <xs:sequence>
+                                                                                    <xs:element maxOccurs="unbounded" name="LocalisationCH_V1.LocalisedText">
+                                                                                        <xs:complexType>
+                                                                                            <xs:sequence>
+                                                                                                <xs:element name="Language" type="xs:string" />
+                                                                                                <xs:element name="Text" type="xs:string" />
+                                                                                            </xs:sequence>
+                                                                                        </xs:complexType>
+                                                                                    </xs:element>
+                                                                                </xs:sequence>
+                                                                            </xs:complexType>
+                                                                        </xs:element>
+                                                                    </xs:sequence>
+                                                                </xs:complexType>
+                                                            </xs:element>
+                                                        </xs:sequence>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                            </xs:sequence>
+                                            <xs:attribute name="TID" type="xs:unsignedByte" use="required" />
+                                        </xs:complexType>
+                                    </xs:element>
+                                    <xs:element maxOccurs="unbounded" name="OeREBKRMkvs_V2_0.Konfiguration.GrundstuecksArtTxt">
+                                        <xs:complexType>
+                                            <xs:sequence>
+                                                <xs:element name="Code" type="xs:string" />
+                                                <xs:element name="Titel">
+                                                    <xs:complexType>
+                                                        <xs:sequence>
+                                                            <xs:element name="LocalisationCH_V1.MultilingualText">
+                                                                <xs:complexType>
+                                                                    <xs:sequence>
+                                                                        <xs:element name="LocalisedText">
+                                                                            <xs:complexType>
+                                                                                <xs:sequence>
+                                                                                    <xs:element maxOccurs="unbounded" name="LocalisationCH_V1.LocalisedText">
+                                                                                        <xs:complexType>
+                                                                                            <xs:sequence>
+                                                                                                <xs:element name="Language" type="xs:string" />
+                                                                                                <xs:element name="Text" type="xs:string" />
+                                                                                            </xs:sequence>
+                                                                                        </xs:complexType>
+                                                                                    </xs:element>
+                                                                                </xs:sequence>
+                                                                            </xs:complexType>
+                                                                        </xs:element>
+                                                                    </xs:sequence>
+                                                                </xs:complexType>
+                                                            </xs:element>
+                                                        </xs:sequence>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                            </xs:sequence>
+                                            <xs:attribute name="TID" type="xs:unsignedByte" use="required" />
+                                        </xs:complexType>
+                                    </xs:element>
+                                    <xs:element maxOccurs="unbounded" name="OeREBKRMkvs_V2_0.Konfiguration.Glossar">
+                                        <xs:complexType>
+                                            <xs:sequence>
+                                                <xs:element name="Titel">
+                                                    <xs:complexType>
+                                                        <xs:sequence>
+                                                            <xs:element name="LocalisationCH_V1.MultilingualText">
+                                                                <xs:complexType>
+                                                                    <xs:sequence>
+                                                                        <xs:element name="LocalisedText">
+                                                                            <xs:complexType>
+                                                                                <xs:sequence>
+                                                                                    <xs:element maxOccurs="unbounded" name="LocalisationCH_V1.LocalisedText">
+                                                                                        <xs:complexType>
+                                                                                            <xs:sequence>
+                                                                                                <xs:element name="Language" type="xs:string" />
+                                                                                                <xs:element name="Text" type="xs:string" />
+                                                                                            </xs:sequence>
+                                                                                        </xs:complexType>
+                                                                                    </xs:element>
+                                                                                </xs:sequence>
+                                                                            </xs:complexType>
+                                                                        </xs:element>
+                                                                    </xs:sequence>
+                                                                </xs:complexType>
+                                                            </xs:element>
+                                                        </xs:sequence>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="Inhalt">
+                                                    <xs:complexType>
+                                                        <xs:sequence>
+                                                            <xs:element name="LocalisationCH_V1.MultilingualMText">
+                                                                <xs:complexType>
+                                                                    <xs:sequence>
+                                                                        <xs:element name="LocalisedText">
+                                                                            <xs:complexType>
+                                                                                <xs:sequence>
+                                                                                    <xs:element maxOccurs="unbounded" name="LocalisationCH_V1.LocalisedMText">
+                                                                                        <xs:complexType>
+                                                                                            <xs:sequence>
+                                                                                                <xs:element name="Language" type="xs:string" />
+                                                                                                <xs:element name="Text" type="xs:string" />
+                                                                                            </xs:sequence>
+                                                                                        </xs:complexType>
+                                                                                    </xs:element>
+                                                                                </xs:sequence>
+                                                                            </xs:complexType>
+                                                                        </xs:element>
+                                                                    </xs:sequence>
+                                                                </xs:complexType>
+                                                            </xs:element>
+                                                        </xs:sequence>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                            </xs:sequence>
+                                            <xs:attribute name="TID" type="xs:unsignedByte" use="required" />
+                                        </xs:complexType>
+                                    </xs:element>
+                                    <xs:element maxOccurs="unbounded" name="OeREBKRMkvs_V2_0.Konfiguration.Haftungshinweis">
+                                        <xs:complexType>
+                                            <xs:sequence>
+                                                <xs:element name="Titel">
+                                                    <xs:complexType>
+                                                        <xs:sequence>
+                                                            <xs:element name="LocalisationCH_V1.MultilingualText">
+                                                                <xs:complexType>
+                                                                    <xs:sequence>
+                                                                        <xs:element name="LocalisedText">
+                                                                            <xs:complexType>
+                                                                                <xs:sequence>
+                                                                                    <xs:element maxOccurs="unbounded" name="LocalisationCH_V1.LocalisedText">
+                                                                                        <xs:complexType>
+                                                                                            <xs:sequence>
+                                                                                                <xs:element name="Language" type="xs:string" />
+                                                                                                <xs:element name="Text" type="xs:string" />
+                                                                                            </xs:sequence>
+                                                                                        </xs:complexType>
+                                                                                    </xs:element>
+                                                                                </xs:sequence>
+                                                                            </xs:complexType>
+                                                                        </xs:element>
+                                                                    </xs:sequence>
+                                                                </xs:complexType>
+                                                            </xs:element>
+                                                        </xs:sequence>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="Inhalt">
+                                                    <xs:complexType>
+                                                        <xs:sequence>
+                                                            <xs:element name="LocalisationCH_V1.MultilingualMText">
+                                                                <xs:complexType>
+                                                                    <xs:sequence>
+                                                                        <xs:element name="LocalisedText">
+                                                                            <xs:complexType>
+                                                                                <xs:sequence>
+                                                                                    <xs:element maxOccurs="unbounded" name="LocalisationCH_V1.LocalisedMText">
+                                                                                        <xs:complexType>
+                                                                                            <xs:sequence>
+                                                                                                <xs:element name="Language" type="xs:string" />
+                                                                                                <xs:element name="Text" type="xs:string" />
+                                                                                            </xs:sequence>
+                                                                                        </xs:complexType>
+                                                                                    </xs:element>
+                                                                                </xs:sequence>
+                                                                            </xs:complexType>
+                                                                        </xs:element>
+                                                                    </xs:sequence>
+                                                                </xs:complexType>
+                                                            </xs:element>
+                                                        </xs:sequence>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="AuszugIndex" type="xs:unsignedByte" />
+                                            </xs:sequence>
+                                            <xs:attribute name="TID" type="xs:decimal" use="required" />
+                                        </xs:complexType>
+                                    </xs:element>
+                                    <xs:element name="OeREBKRMkvs_V2_0.Konfiguration.Information">
+                                        <xs:complexType>
+                                            <xs:sequence>
+                                                <xs:element name="Titel">
+                                                    <xs:complexType>
+                                                        <xs:sequence>
+                                                            <xs:element name="LocalisationCH_V1.MultilingualText">
+                                                                <xs:complexType>
+                                                                    <xs:sequence>
+                                                                        <xs:element name="LocalisedText">
+                                                                            <xs:complexType>
+                                                                                <xs:sequence>
+                                                                                    <xs:element maxOccurs="unbounded" name="LocalisationCH_V1.LocalisedText">
+                                                                                        <xs:complexType>
+                                                                                            <xs:sequence>
+                                                                                                <xs:element name="Language" type="xs:string" />
+                                                                                                <xs:element name="Text" type="xs:string" />
+                                                                                            </xs:sequence>
+                                                                                        </xs:complexType>
+                                                                                    </xs:element>
+                                                                                </xs:sequence>
+                                                                            </xs:complexType>
+                                                                        </xs:element>
+                                                                    </xs:sequence>
+                                                                </xs:complexType>
+                                                            </xs:element>
+                                                        </xs:sequence>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="Inhalt">
+                                                    <xs:complexType>
+                                                        <xs:sequence>
+                                                            <xs:element name="LocalisationCH_V1.MultilingualMText">
+                                                                <xs:complexType>
+                                                                    <xs:sequence>
+                                                                        <xs:element name="LocalisedText">
+                                                                            <xs:complexType>
+                                                                                <xs:sequence>
+                                                                                    <xs:element maxOccurs="unbounded" name="LocalisationCH_V1.LocalisedMText">
+                                                                                        <xs:complexType>
+                                                                                            <xs:sequence>
+                                                                                                <xs:element name="Language" type="xs:string" />
+                                                                                                <xs:element name="Text" type="xs:string" />
+                                                                                            </xs:sequence>
+                                                                                        </xs:complexType>
+                                                                                    </xs:element>
+                                                                                </xs:sequence>
+                                                                            </xs:complexType>
+                                                                        </xs:element>
+                                                                    </xs:sequence>
+                                                                </xs:complexType>
+                                                            </xs:element>
+                                                        </xs:sequence>
+                                                    </xs:complexType>
+                                                </xs:element>
+                                                <xs:element name="AuszugIndex" type="xs:unsignedByte" />
+                                            </xs:sequence>
+                                            <xs:attribute name="TID" type="xs:unsignedShort" use="required" />
+                                        </xs:complexType>
+                                    </xs:element>
+                                </xs:sequence>
+                                <xs:attribute name="BID" type="xs:string" use="required" />
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:element>
+</xs:schema>

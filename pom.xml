@@ -28,6 +28,7 @@
         <org.verapdf.version>1.28.2</org.verapdf.version>
         <org.slf4j.version>2.0.17</org.slf4j.version>
         <org.junit.jupiter.version>6.0.0</org.junit.jupiter.version>
+        <org.jsoup.version>1.21.2</org.jsoup.version>
     </properties>
 
     <dependencies>
@@ -63,53 +64,25 @@
             <version>${software.amazon.awssdk.version}</version>
         </dependency>
 
-        <dependency> <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>${com.google.code.gson.version}</version>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-lambda-java-core</artifactId>
+            <version>1.4.0</version>
         </dependency>
-
-        <dependency> <!-- https://mvnrepository.com/artifact/jakarta.xml.bind/jakarta.xml.bind-api -->
-            <groupId>jakarta.xml.bind</groupId>
-            <artifactId>jakarta.xml.bind-api</artifactId>
-            <version>${jakarta.xml.bind.version}</version>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-lambda-java-runtime-interface-client</artifactId>
+            <version>2.8.7</version>
         </dependency>
-
-        <!-- https://docs.verapdf.org/develop/ -->
-        <dependency> <!-- https://mvnrepository.com/artifact/org.verapdf/validation-model-jakarta -->
-            <groupId>org.verapdf</groupId>
-            <artifactId>validation-model-jakarta</artifactId>
-            <version>${org.verapdf.version}</version>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-lambda-java-events</artifactId>
+            <version>3.16.1</version>
         </dependency>
-        <dependency> <!-- https://mvnrepository.com/artifact/org.verapdf/parser -->
-            <groupId>org.verapdf</groupId>
-            <artifactId>parser</artifactId>
-            <version>${org.verapdf.version}</version>
-        </dependency>
-        <dependency> <!-- https://mvnrepository.com/artifact/org.verapdf/pdf-model -->
-            <groupId>org.verapdf</groupId>
-            <artifactId>pdf-model</artifactId>
-            <version>${org.verapdf.version}</version>
-        </dependency>
-        <dependency> <!-- https://mvnrepository.com/artifact/org.verapdf/core-jakarta -->
-            <groupId>org.verapdf</groupId>
-            <artifactId>core-jakarta</artifactId>
-            <version>${org.verapdf.version}</version>
-        </dependency>
-        <dependency> <!-- https://mvnrepository.com/artifact/org.verapdf/feature-reporting-jakarta -->
-            <groupId>org.verapdf</groupId>
-            <artifactId>feature-reporting-jakarta</artifactId>
-            <version>${org.verapdf.version}</version>
-        </dependency>
-        <dependency> <!-- https://mvnrepository.com/artifact/org.verapdf/wcag-validation-jakarta -->
-            <groupId>org.verapdf</groupId>
-            <artifactId>wcag-validation-jakarta</artifactId>
-            <version>${org.verapdf.version}</version>
-        </dependency>
-        <dependency> <!-- https://mvnrepository.com/artifact/org.verapdf/metadata-fixer-jakarta -->
-            <groupId>org.verapdf</groupId>
-            <artifactId>metadata-fixer-jakarta</artifactId>
-            <version>${org.verapdf.version}</version>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-lambda-java-log4j2</artifactId>
+            <version>1.6.0</version>
         </dependency>
 
         <dependency>
@@ -118,13 +91,18 @@
             <version>2.25.2</version>
             <scope>runtime</scope>
         </dependency>
-        <dependency> <!-- Log4j JSON-encoding support -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>2.25.2</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-layout-template-json</artifactId>
             <version>2.25.2</version>
             <scope>runtime</scope>
         </dependency>
-        <dependency> <!-- SLF4J-to-Log4j bridge -->
+        <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j2-impl</artifactId>
             <version>2.25.2</version>
@@ -135,11 +113,66 @@
             <artifactId>slf4j-api</artifactId>
             <version>${org.slf4j.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${com.google.code.gson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+            <version>${jakarta.xml.bind.version}</version>
+        </dependency>
+
+        <!-- https://docs.verapdf.org/develop/ -->
+        <dependency>
+            <groupId>org.verapdf</groupId>
+            <artifactId>validation-model-jakarta</artifactId>
+            <version>${org.verapdf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.verapdf</groupId>
+            <artifactId>parser</artifactId>
+            <version>${org.verapdf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.verapdf</groupId>
+            <artifactId>pdf-model</artifactId>
+            <version>${org.verapdf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.verapdf</groupId>
+            <artifactId>core-jakarta</artifactId>
+            <version>${org.verapdf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.verapdf</groupId>
+            <artifactId>feature-reporting-jakarta</artifactId>
+            <version>${org.verapdf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.verapdf</groupId>
+            <artifactId>wcag-validation-jakarta</artifactId>
+            <version>${org.verapdf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.verapdf</groupId>
+            <artifactId>metadata-fixer-jakarta</artifactId>
+            <version>${org.verapdf.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>${org.junit.jupiter.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>${org.jsoup.version}</version>
         </dependency>
     </dependencies>
 
@@ -147,34 +180,61 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>${maven.plugins.version}</version>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.0</version>
                 <configuration>
-                    <archive>
-                        <manifest>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                    <shadedArtifactAttached>false</shadedArtifactAttached>
+                    <shadedClassifierName/>
+                    <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+                    <transformers>
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                             <mainClass>ch.swisstopo.oerebchecker.OerebChecker</mainClass>
-                        </manifest>
-                    </archive>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
+                        </transformer>
+                        <!-- This merges the META-INF/services files so all libraries work -->
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                        <transformer implementation="com.github.edwgiz.maven_shade_plugin.log4j2_cache_transformer.PluginsCacheFileTransformer" />
+                        <!-- Add this to merge multi-release JAR info (fixes the module-info warnings) -->
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer"/>
+                    </transformers>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>module-info.class</exclude>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                                <!-- Exclude these to stop the warnings and reduce JAR size -->
+                                <exclude>META-INF/LICENSE*</exclude>
+                                <exclude>META-INF/NOTICE*</exclude>
+                                <exclude>META-INF/DEPENDENCIES</exclude>
+                            </excludes>
+                        </filter>
+                        <filter>
+                            <artifact>com.amazonaws:aws-lambda-java-runtime-interface-client</artifact>
+                            <includes>
+                                <include>**</include>
+                            </includes>
+                        </filter>
+                    </filters>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>standalone</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>single</goal>
+                            <goal>shade</goal>
                         </goals>
-                        <configuration>
-                            <archive>
-                                <manifest>
-                                    <mainClass>ch.swisstopo.oerebchecker.OerebChecker</mainClass>
-                                </manifest>
-                            </archive>
-                        </configuration>
                     </execution>
                 </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.github.edwgiz</groupId>
+                        <artifactId>maven-shade-plugin.log4j2-cachefile-transformer</artifactId>
+                        <version>2.15.0</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>

@@ -1,0 +1,40 @@
+# Stage 1: Build
+FROM maven:3.9.6-amazoncorretto-21 AS build
+WORKDIR /build
+
+# Copy pom.xml from the project root
+COPY pom.xml .
+# Cache dependencies
+RUN mvn dependency:go-offline -B
+
+# Copy the source code
+COPY src ./src
+
+# Build the application
+RUN mvn clean package -DskipTests -B
+
+# Stage 2: Runtime
+FROM amazoncorretto:21-alpine
+WORKDIR /app
+
+# Setup security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# Create output directory and set ownership
+RUN mkdir -p /app/output && chown appuser:appgroup /app/output
+
+# Copy the JAR from the build stage
+COPY --from=build /build/target/oereb-checker-1.0.jar oereb-checker-1.0.jar
+
+RUN chown appuser:appgroup oereb-checker-1.0.jar
+
+LABEL authors="Geocloud AG"
+LABEL maintainer="Geocloud AG <https://www.geocloud.ch>"
+LABEL version="1.0"
+
+USER appuser
+
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-cp", "/app/oereb-checker-1.0.jar", "com.amazonaws.services.lambda.runtime.api.client.AWSLambda"]
+
+# CMD: The default argument passed to the ENTRYPOINT (your specific handler)
+# This part can be overridden in the AWS Lambda configuration
+CMD ["ch.swisstopo.oerebchecker.lambda.LambdaHandler::handleRequest"]

@@ -1,3 +1,3 @@
-java -jar OerebChecker.jar -cFP daten\beispiel\config.json
-java -jar OerebChecker.jar -cFP config.json
+java -jar OerebChecker.jar -cFP daten\beispiel\cantonConfig.json
+java -jar OerebChecker.jar -cFP cantonConfig.json
 java -jar OerebChecker.jar -cFP C:\Java\daten\beispiel\config_ur.json

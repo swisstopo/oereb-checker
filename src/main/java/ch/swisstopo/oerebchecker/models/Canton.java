@@ -1,0 +1,31 @@
+package ch.swisstopo.oerebchecker.models;
+
+public enum Canton {
+    AG,
+    AR,
+    AI,
+    BE,
+    BL,
+    BS,
+    FR,
+    GE,
+    GL,
+    GR,
+    JU,
+    LU,
+    NE,
+    NW,
+    OW,
+    SH,
+    SZ,
+    SO,
+    SG,
+    TI,
+    TG,
+    UR,
+    VD,
+    VS,
+    ZG,
+    ZH,
+    unknown
+}

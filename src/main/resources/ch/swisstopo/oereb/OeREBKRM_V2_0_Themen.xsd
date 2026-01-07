@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Created with Liquid Technologies Online Tools 1.0 (https://www.liquid-technologies.com) -->
+<xs:schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="http://www.interlis.ch/INTERLIS2.3" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="TRANSFER">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="HEADERSECTION">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="MODELS">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element maxOccurs="unbounded" name="MODEL">
+                                            <xs:complexType>
+                                                <xs:attribute name="NAME" type="xs:string" use="required" />
+                                                <xs:attribute name="VERSION" type="xs:date" use="required" />
+                                                <xs:attribute name="URI" type="xs:string" use="required" />
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="COMMENT" type="xs:string" />
+                        </xs:sequence>
+                        <xs:attribute name="SENDER" type="xs:string" use="required" />
+                        <xs:attribute name="VERSION" type="xs:decimal" use="required" />
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="DATASECTION">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="OeREBKRMkvs_V2_0.Thema">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:choice maxOccurs="unbounded">
+                                            <xs:element name="OeREBKRMkvs_V2_0.Thema.Thema">
+                                                <xs:complexType>
+                                                    <xs:sequence>
+                                                        <xs:element name="Code" type="xs:string" />
+                                                        <xs:element name="Titel">
+                                                            <xs:complexType>
+                                                                <xs:sequence>
+                                                                    <xs:element name="LocalisationCH_V1.MultilingualText">
+                                                                        <xs:complexType>
+                                                                            <xs:sequence>
+                                                                                <xs:element name="LocalisedText">
+                                                                                    <xs:complexType>
+                                                                                        <xs:sequence>
+                                                                                            <xs:element maxOccurs="unbounded" name="LocalisationCH_V1.LocalisedText">
+                                                                                                <xs:complexType>
+                                                                                                    <xs:sequence>
+                                                                                                        <xs:element name="Language" type="xs:string" />
+                                                                                                        <xs:element name="Text" type="xs:string" />
+                                                                                                    </xs:sequence>
+                                                                                                </xs:complexType>
+                                                                                            </xs:element>
+                                                                                        </xs:sequence>
+                                                                                    </xs:complexType>
+                                                                                </xs:element>
+                                                                            </xs:sequence>
+                                                                        </xs:complexType>
+                                                                    </xs:element>
+                                                                </xs:sequence>
+                                                            </xs:complexType>
+                                                        </xs:element>
+                                                        <xs:element name="AuszugIndex" type="xs:unsignedShort" />
+                                                    </xs:sequence>
+                                                    <xs:attribute name="TID" type="xs:string" use="required" />
+                                                </xs:complexType>
+                                            </xs:element>
+                                            <xs:element name="OeREBKRMkvs_V2_0.Thema.ThemaGesetz">
+                                                <xs:complexType>
+                                                    <xs:sequence>
+                                                        <xs:element name="Thema">
+                                                            <xs:complexType>
+                                                                <xs:attribute name="REF" type="xs:string" use="required" />
+                                                            </xs:complexType>
+                                                        </xs:element>
+                                                        <xs:element name="Gesetz">
+                                                            <xs:complexType>
+                                                                <xs:attribute name="REF" type="xs:string" use="required" />
+                                                            </xs:complexType>
+                                                        </xs:element>
+                                                    </xs:sequence>
+                                                </xs:complexType>
+                                            </xs:element>
+                                        </xs:choice>
+                                    </xs:sequence>
+                                    <xs:attribute name="BID" type="xs:string" use="required" />
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

@@ -2,6 +2,8 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>Öreb-Checker Ergebnis</title>
     <style>
         #inlineCssPlaceholder
@@ -9,26 +11,75 @@
 </head>
 <body>
 <div class="container">
-    <table class="responsive-table">
-        <thead>
-        <tr>
-            <th scope="col">Url</th>
-            <th scope="col">StatusCode</th>
-            <th scope="col">ContentType</th>
-            <th scope="col">XmlIsValid</th>
-            <th scope="col">PdfIsValid</th>
-            <th scope="col">Check successful</th>
-        </tr>
-        </thead>
-        <tfoot>
-        <tr>
-            <td colspan="6">Execution Date: #executionDatePlaceHolder</td>
-        </tr>
-        </tfoot>
-        <tbody>
-            #tableRowsPlaceHolder
-        </tbody>
-    </table>
+    <button class="accordion">AG</button>
+    <div class="panel" id="ag-result"><div id="ag-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">AI</button>
+    <div class="panel" id="ai-result"><div id="ai-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">AR</button>
+    <div class="panel" id="ar-result"><div id="ar-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">BE</button>
+    <div class="panel" id="be-result"><div id="be-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">BL</button>
+    <div class="panel" id="bl-result"><div id="bl-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">BS</button>
+    <div class="panel" id="bs-result"><div id="bs-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">FR</button>
+    <div class="panel" id="fr-result"><div id="fr-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">GE</button>
+    <div class="panel" id="ge-result"><div id="ge-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">GL</button>
+    <div class="panel" id="gl-result"><div id="gl-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">GR</button>
+    <div class="panel" id="gr-result"><div id="gr-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">JU</button>
+    <div class="panel" id="ju-result"><div id="ju-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">LU</button>
+    <div class="panel" id="lu-result"><div id="lu-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">NE</button>
+    <div class="panel" id="ne-result"><div id="ne-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">NW</button>
+    <div class="panel" id="nw-result"><div id="nw-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">OW</button>
+    <div class="panel" id="ow-result"><div id="ow-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">SG</button>
+    <div class="panel" id="sg-result"><div id="sg-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">SH</button>
+    <div class="panel" id="sh-result"><div id="sh-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">SO</button>
+    <div class="panel" id="so-result"><div id="so-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">SZ</button>
+    <div class="panel" id="sz-result"><div id="sz-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">TG</button>
+    <div class="panel" id="tg-result"><div id="tg-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">TI</button>
+    <div class="panel" id="ti-result"><div id="ti-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">UR</button>
+    <div class="panel" id="ur-result"><div id="ur-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">VD</button>
+    <div class="panel" id="vd-result"><div id="vd-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">VS</button>
+    <div class="panel" id="vs-result"><div id="vs-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">ZG</button>
+    <div class="panel" id="zg-result"><div id="zg-checkResultPlaceholder">Nicht durchgeführt</div></div>
+    <button class="accordion">ZH</button>
+    <div class="panel" id="zh-result"><div id="zh-checkResultPlaceholder">Nicht durchgeführt</div></div>
 </div>
+
+<script>
+    var acc = document.getElementsByClassName("accordion");
+    var i;
+
+    for (i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function () {
+            this.classList.toggle("active");
+            var panel = this.nextElementSibling;
+            if (panel.style.display === "block") {
+                panel.style.display = "none";
+            } else {
+                panel.style.display = "block";
+            }
+        });
+    }
+</script>
 </body>
 </html>

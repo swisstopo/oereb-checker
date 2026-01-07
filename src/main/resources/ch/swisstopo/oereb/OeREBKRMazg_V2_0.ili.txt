@@ -1,0 +1,328 @@
+INTERLIS 2.3;
+
+/** Katasterauszug (die Datenstruktur wird zwar als INTERLIS-Modell definiert, das Transferformat wird jedoch durch ein durch die Eidg. Vermessungsdirektion festgelegtes XML-Schema definiert)
+ */
+!!@ furtherInformation=https://www.cadastre.ch/oereb-public
+!!@ technicalContact=mailto:vermessung@swisstopo.ch
+MODEL OeREBKRMazg_V2_0 (de)
+AT "https://models.geo.admin.ch/V_D/OeREB/"
+VERSION "2021-04-14"  =
+  IMPORTS OeREBKRM_V2_0,CHAdminCodes_V1,LocalisationCH_V1,GeometryCHLV95_V1,Units;
+
+  /** Dieses Teilmodell definiert die Struktur der Daten, wie sie von den Benutzenden des ÖREB-Katasters von der für den Kataster verantwortlichen Stelle des Kantons bezogen werden können
+   */
+  TOPIC KatasterAuszug =
+
+    DOMAIN
+
+      Flaechenmass = 0 .. 999999999 [Units.m2];
+
+      Laengenmass = 0 .. 999999999 [INTERLIS.m];
+
+    /** Organisationseinheit innerhalb der öffentlichen Verwaltung, z.B. eine für Geobasisdaten zuständige Stelle
+     */
+    STRUCTURE Amt =
+      /** Name des Amtes, z.B. «Amt für Gemeinden und Raumordnung des Kantons Bern»
+       */
+      Name : MANDATORY LocalisationCH_V1.MultilingualText;
+      /** Verweis auf die Website des Amtes z.B. «https://www.jgk.be.ch/jgk/de/index/direktion/organisation/agr.html»
+       */
+      AmtImWeb : OeREBKRM_V2_0.MultilingualUri;
+      /** UID der Organisationseinheit
+       */
+      UID : OeREBKRM_V2_0.UID;
+      /** Optionale zusätzliche Adresszeile
+       */
+      Zeile1 : TEXT*80;
+      /** Optionale zusätzliche Adresszeile
+       */
+      Zeile2 : TEXT*80;
+      /** Strasse
+       */
+      Strasse : TEXT*100;
+      /** Hausnummer
+       */
+      Hausnr : TEXT*7;
+      /** 4-stellige Postleitzahl
+       */
+      PLZ : TEXT*4;
+      /** Postalischer Ort
+       */
+      Ort : TEXT*40;
+    END Amt;
+
+    /** Punkt-, linien-, oder flächenförmige Geometrie; neu zu definierende Eigentumsbeschränkungen sollten in der Regel flächenförmig sein
+     */
+    STRUCTURE Geometrie =
+      /** Punktgeometrie
+       */
+      Punkt : GeometryCHLV95_V1.Coord2;
+      /** Linienförmige Geometrie
+       */
+      Linie : GeometryCHLV95_V1.Line;
+      /** Flächenförmige Geometrie
+       */
+      Flaeche : GeometryCHLV95_V1.Surface;
+      /** Status, ob diese Geometrie in Kraft ist
+       */
+      Rechtsstatus : MANDATORY OeREBKRM_V2_0.RechtsStatus;
+      /** Verweis auf maschinenlesbare Metadaten (XML) der zugrundeliegenden Geobasisdaten
+       */
+      MetadatenGeobasisdaten : URI;
+      MANDATORY CONSTRAINT DEFINED(Punkt) OR DEFINED(Linie) OR DEFINED(Flaeche);
+    END Geometrie;
+
+    /** Eintrag im Verzeichnis Begriffe und Abkürzungen (Glossar)
+     */
+    STRUCTURE Glossar =
+      /** Begriff oder Abkürzung
+       */
+      Titel : MANDATORY LocalisationCH_V1.MultilingualText;
+      /** Erklärung des Begriffs oder der Abkürzung
+       */
+      Inhalt : MANDATORY LocalisationCH_V1.MultilingualMText;
+    END Glossar;
+
+    /** Spezifische Haftungshinweise
+     */
+    STRUCTURE Haftungshinweis =
+      /** Titel zum Haftungshinweis
+       */
+      Titel : MANDATORY LocalisationCH_V1.MultilingualText;
+      /** Text zum Haftungshinweis
+       */
+      Inhalt : MANDATORY LocalisationCH_V1.MultilingualMText;
+    END Haftungshinweis;
+
+    /** Eintrag in der Planlegende
+     */
+    STRUCTURE LegendeEintrag =
+      /** Grafischer Teil des Legendeneintrages für die Darstellung im PNG-Format mit 300dpi oder im SVG-Format
+       */
+      Symbol : MANDATORY BLACKBOX BINARY;
+      /** Text des Legendeneintrages
+       */
+      LegendeText : MANDATORY LocalisationCH_V1.MultilingualText;
+      /** Art der Eigentumsbeschränkung, die durch diesen Legendeneintrag dargestellt wird
+       */
+      ArtCode : MANDATORY OeREBKRM_V2_0.ArtEigentumsbeschraenkung;
+      /** Codeliste der Eigentumsbeschränkung, die durch diesen Legendeneintrag dargestellt wird
+       */
+      ArtCodeliste : MANDATORY URI;
+      /** Angabe, zu welchem ÖREB-Thema der Legendeneintrag gehört
+       */
+      Thema : MANDATORY OeREBKRM_V2_0.Thema;
+      /** Z.B. für «Überlagernde Festlegungen» innerhalb Nutzungsplanung
+       */
+      SubThema : OeREBKRM_V2_0.Thema;
+    END LegendeEintrag;
+
+    /** Dokumente im Allgemeinen (Gesetze, Verordnungen, Rechtsvorschriften, weitere Hinweise)
+     */
+    STRUCTURE Dokument =
+      /** Rechtsvorschrift, gesetzliche Grundlage oder Hinweis
+       */
+      Typ : MANDATORY OeREBKRM_V2_0.DokumentTyp;
+      /** Titel des Dokuments wie er im ÖREB-Kataster erscheinen soll
+       */
+      Titel : MANDATORY LocalisationCH_V1.MultilingualText;
+      /** Abkürzung des Gesetzes, z.B. «RPG»
+       */
+      Abkuerzung : LocalisationCH_V1.MultilingualText;
+      /** Offizielle Nummer des Gesetzes, z.B. «SR 700»
+       */
+      OffizielleNr : LocalisationCH_V1.MultilingualText;
+      /** Verweis auf das Dokument im Web, z.B. «https://www.admin.ch/ch/d/sr/700»
+       */
+      TextImWeb : MANDATORY OeREBKRM_V2_0.MultilingualUri;
+      /** Hinweis auf spezifische Artikel
+       */
+      ArtikelNr : BAG {0..*} OF OeREBKRM_V2_0.ArtikelNummer_;
+      /** Status, ob dieses Dokument in Kraft ist
+       */
+      Rechtsstatus : MANDATORY OeREBKRM_V2_0.RechtsStatus;
+      /** Ordnungszahl für die Sortierung im Auszug
+       */
+      Index : MANDATORY -1000 .. 1000;
+      ZustaendigeStelle : MANDATORY Amt;
+    END Dokument;
+
+    /** Angaben zu einer Ebene der grafischen Darstellung im Katasterauszug: Eine Kartenebene im Katasterauszug kann mehrere Eigentumsbeschränkungen darstellen, oder im Falle des Grundbuchplans mehrere AV-Datenebenen
+     */
+    STRUCTURE Karte =
+      /** In den Auszug eingebettes Bild (PNG-Format); bei einem beglaubigten Auszug muss das Kartenbild eingebettet werden
+       */
+      Bild : OeREBKRM_V2_0.MultilingualBlob;
+      /** WMS GetMap-Request (für Maschine-Maschine-Kommunikation) inkl. alle benötigten Parameter, z.B. «https://wms.geo.admin.ch/?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&STYLES=default&CRS=EPSG:2056&BBOX=2475000,1060000,2845000,1310000&WIDTH=740&HEIGHT=500&FORMAT=image/png&LAYERS=ch.bazl.kataster-belasteter-standorte-zivilflugplaetze.oereb»
+       */
+      VerweisWMS : OeREBKRM_V2_0.MultilingualUri;
+      /** Punkt links unten des Bildes
+       */
+      min : MANDATORY GeometryCHLV95_V1.Coord2;
+      /** Punkt rechts oben des Bildes
+       */
+      max : MANDATORY GeometryCHLV95_V1.Coord2;
+      /** Ordnungszahl für die Sortierung (bei der Überlagerung) der einzelnen Bilder
+       */
+      layerIndex : -1000 .. 1000;
+      /** Deckkraft (bei der Überlagerung) des Bildes
+       */
+      layerDeckkraft : 0.000 .. 1.000;
+      UebrigeLegende : BAG {0..*} OF LegendeEintrag;
+      MANDATORY CONSTRAINT DEFINED(Bild) OR DEFINED(VerweisWMS);
+    END Karte;
+
+    /** Wurzelelement für Informationen über eine Beschränkung des Grundeigentums, die rechtskräftig, z.B. auf Grund einer Genehmigung oder eines richterlichen Entscheids, zustande gekommen ist
+     */
+    STRUCTURE Eigentumsbeschraenkung =
+      /** Textliche Beschreibung der Beschränkung, z.B. «Wohnen W3»
+       */
+      LegendeText : MANDATORY LocalisationCH_V1.MultilingualText;
+      /** Einordnung der Eigentumsbeschränkung in ein ÖREB-Thema
+       */
+      Thema : MANDATORY OeREBKRM_V2_0.Thema;
+      /** Z.B. für «Überlagernde Festlegungen» innerhalb Nutzungsplanung
+       */
+      SubThema : OeREBKRM_V2_0.Thema;
+      /** Themenspezifische, maschinenlesbare Art gemäss Originalmodell der Eigentumsbeschränkung
+       */
+      ArtCode : MANDATORY OeREBKRM_V2_0.ArtEigentumsbeschraenkung;
+      /** Identifikation der Codeliste bzw. des Wertebereichs für ArtCode
+       */
+      ArtCodeliste : MANDATORY URI;
+      /** Status, ob diese Eigentumsbeschränkung in Kraft ist
+       */
+      Rechtsstatus : MANDATORY OeREBKRM_V2_0.RechtsStatus;
+      /** Falls die Eigentumsbeschränkung als Flächengeometrie definiert ist: Fläche dieser Eigentumsbeschränkung auf dem betroffenen Grundstück
+       */
+      FlaecheAnteil : Flaechenmass;
+      /** Falls die Eigentumsbeschränkung als Flächengeometrie definiert ist: Flächenanteil (in %) der Überdeckung des Grundstücks (zur Beurteilung der Relevanz)
+       */
+      AnteilInProzent : 0.0 .. 100.0;
+      /** Falls die Eigentumsbeschränkung als Liniengeometrie definiert ist: Länge der Eigentumsbeschränkung auf dem betroffenen Grundstück
+       */
+      LaengeAnteil : Laengenmass;
+      /** Falls die Eigentumsbeschränkung als Punktgeometrie definiert ist: Anzahl Punkte der Eigentumsbeschränkung auf dem betroffenen Grundstück
+       */
+      PunkteAufGrundstueck : 0 .. 10000000;
+      /** Grafischer Teil des Legendeneintrages für die Darstellung dieser Eigentumsbeschränkung im PNG-Format mit 300dpi oder im SVG-Format
+       */
+      Symbol : MANDATORY BLACKBOX BINARY;
+      /** Geometrie der Eigentumsbeschränkung, die Rechtswirkung hat (z.B. für eine Hervorhebung in einer Karte)
+       */
+      Geometrie : BAG {1..*} OF Geometrie;
+      /** Themenspezifische Karte, auf der diese Eigentumsbeschränkung sichtbar, aber nicht hervorgehoben, ist
+       */
+      Karte : MANDATORY Karte;
+      /** Rechtsvorschrift der Eigentumsbeschränkung
+       */
+      Vorschrift : BAG {1..*} OF Dokument;
+      /** Die für diese Geobasisdaten zuständige Stelle (Fachamt)
+       */
+      ZustaendigeStelle : MANDATORY Amt;
+      MANDATORY CONSTRAINT DEFINED(FlaecheAnteil) OR DEFINED(LaengeAnteil) OR DEFINED(PunkteAufGrundstueck);
+    END Eigentumsbeschraenkung;
+
+    /** Liegenschaft und SDR im Sinne von Artikel 655 ZGB, soweit diese in der amtlichen Vermessung mit Flächengeometrie erfasst sind (d.h. alle Objekte der Tabellen Liegenschaft und SDR gemäss TOPIC Liegenschaften des DM.01)
+     */
+    STRUCTURE Liegenschaft_SDR =
+      /** Nummer des Grundstücks, z.B. «4912»
+       */
+      Nummer : TEXT*12;
+      /** NBIdent gemäss AV-Daten für dieses Grundstück
+       */
+      NBIdent : TEXT*12;
+      /** Wertebereich für die Eidg. Grundstücks-Identifikation, z.B. «CH787701897777»
+       */
+      EGRID : TEXT*14;
+      /** Art des Grundstücks gemäss Definition im DM.01, z.B. «SelbstRecht.Baurecht»
+       */
+      Art : MANDATORY OeREBKRM_V2_0.GrundstuecksArt;
+      /** In welchem Kanton dieses Grundstück liegt, z.B. «BE» für Bern
+       */
+      Kanton : MANDATORY CHAdminCodes_V1.CHCantonCode;
+      /** Name der Gemeinde gemäss amtlichem Gemeindeverzeichnis, in welcher dieses Grundstück liegt, z.B. «Thun»
+       */
+      GemeindeName : MANDATORY TEXT*60;
+      /** Nummer der Gemeinde gemäss amtlichem Gemeindeverzeichnis, z.B. «942»
+       */
+      GemeindeNummer : MANDATORY CHAdminCodes_V1.CHMunicipalityCode;
+      /** Name des Grundbuchkreises, der Sektion, der Fraktion oder einer weiteren Untereinheit, wenn die Kombination [Gemeinde] [Grundstücksnummer] nicht eindeutig ist (z.B. Innere Stadt etc.)
+       */
+      UntereinheitGrundbuch : TEXT*60;
+      /** Im Kanton verwendete Bezeichnung, z.B. «Grundbuchkreis», «Sektion», «Fraktion» etc.
+       */
+      BezeichnungUntereinheitGrundbuch : TEXT*80;
+      /** Verweis auf maschinenlesbare Metadaten (XML) der zugrundeliegenden Geobasisdaten
+       */
+      MetadatenGeobasisdaten : URI;
+      /** Fläche des Grundstücks gemäss Grundstücksbeschreibung im Grundbuch
+       */
+      Grundbuchflaeche : MANDATORY Flaechenmass;
+      /** Grenze des Grundstücks
+       */
+      Grenze : MANDATORY GeometryCHLV95_V1.MultiSurface;
+      /** Eigentumsbeschränkungen zu diesem Grundstück
+       */
+      Eigentumsbeschraenkung : BAG {0..*} OF Eigentumsbeschraenkung;
+      /** Ausschnit aus dem Grundbuchplan, auf dem dieses Grundstück sichtbar, aber nicht hervorgehoben, ist
+       */
+      GrundbuchPlan : MANDATORY Karte;
+      GrundbuchPlanTitelseite : MANDATORY Karte;
+      MANDATORY CONSTRAINT DEFINED(EGRID) OR (DEFINED(Nummer) AND DEFINED(NBIdent));
+    END Liegenschaft_SDR;
+
+    /** Wurzelelement für einen Katasterauszug. Ein Katasterauszug enthält den Inhalt des ÖREB-Katasters in Bezug auf genau eine bestimmte Liegenschaft oder ein SDR.
+     */
+    CLASS Auszug =
+      /** Datum an dem der Auszug erstellt wurde, z.B. «2019-08-12»
+       */
+      ErstellungsDatum : MANDATORY FORMAT INTERLIS.XMLDateTime "2009-1-1T0:0:0.0" .. "2999-12-31T23:59:59.0";
+      /** Digitale Signatur von der für den Kataster verantwortlichen Stelle. Mit Signatur ist der Auszug beglaubigt, ohne ist er nicht beglaubigt. Digitale Signatur gemäss eCH-0091
+       */
+      DigitaleSignatur : BLACKBOX XML;
+      /** Liste der ÖREB-Themen, welche das Grundstück betreffen
+       */
+      BetroffenesThema : BAG {0..*} OF OeREBKRM_V2_0.Thema_;
+      /** Liste der ÖREB-Themen, welche das Grundstück nicht betreffen
+       */
+      NichtbetroffenesThema : BAG {0..*} OF OeREBKRM_V2_0.Thema_;
+      /** Liste der ÖREB-Themen, zu denen noch keine Daten vorhanden sind
+       */
+      ThemaOhneDaten : BAG {0..*} OF OeREBKRM_V2_0.Thema_;
+      /** Logo des ÖREB-Katasters im PNG-Format mit 300dpi oder im SVG-Format
+       */
+      LogoOEREBK : MANDATORY BLACKBOX BINARY;
+      /** Logo des Bundes im PNG-Format mit 300dpi oder im SVG-Format
+       */
+      LogoBund : MANDATORY BLACKBOX BINARY;
+      /** Logo des Kantons im PNG-Format mit 300dpi oder im SVG-Format
+       */
+      LogoKanton : MANDATORY BLACKBOX BINARY;
+      /** Logo der Gemeinde im PNG-Format mit 300dpi oder im SVG-Format
+       */
+      LogoGemeinde : MANDATORY BLACKBOX BINARY;
+      /** Nummer die diesen Auszug identifiziert
+       */
+      Auszugnummer : MANDATORY TEXT*50;
+      /** QR-Code (Quick-Response-Code) der diesen Auszug identifiziert im PNG-Format mit 300dpi oder im SVG-Format
+       */
+      QRCode : BLACKBOX BINARY;
+      /** Allgemeine Information gemäss Textvorgabe, siehe Weisung «ÖREB-Kataster: Inhalt und Darstellung des statischen Auszugs»
+       */
+      AllgemeineInformation : LIST {0..*} OF LocalisationCH_V1.MultilingualMText;
+      /** Aktualisierungsdatum der AV im Katasterportal
+       */
+      StandAV : MANDATORY FORMAT INTERLIS.XMLDateTime "2009-1-1T0:0:0.0" .. "2999-12-31T23:59:59.0";
+      Haftungshinweis : LIST {0..*} OF Haftungshinweis;
+      Glossar : BAG {0..*} OF Glossar;
+      /** Grundstück für das dieser Auszug erstellt wurde
+       */
+      Grundstueck : MANDATORY Liegenschaft_SDR;
+      KatasterVerantwortlicheStelle : MANDATORY Amt;
+      MANDATORY CONSTRAINT INTERLIS.elementCount(BetroffenesThema)>0 OR INTERLIS.elementCount(NichtbetroffenesThema)>0 OR INTERLIS.elementCount(ThemaOhneDaten)>0;
+    END Auszug;
+
+  END KatasterAuszug;
+
+END OeREBKRMazg_V2_0.

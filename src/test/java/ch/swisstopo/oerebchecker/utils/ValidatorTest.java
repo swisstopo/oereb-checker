@@ -1,5 +1,7 @@
 package ch.swisstopo.oerebchecker.utils;
 
+import ch.swisstopo.oerebchecker.core.validation.Validator;
+import ch.swisstopo.oerebchecker.core.validation.ValidatorResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,12 +22,14 @@ class ValidatorTest {
             File directory = directoryPath.toFile();
             if (directory.exists()) {
                 for (File file : Objects.requireNonNull(directory.listFiles())) {
-                    ValidatorResult result = Validator.checkXml(new FileInputStream(file));
-                    if (result.IsValid != null && result.IsValid) {
-                        logger.info("xml is valid - '{}'", file.getName());
-                    } else {
-                        logger.warn("xml is not valid - '{}'", file.getName());
-                        result.Messages.forEach(e -> logger.debug("   {}", e.toString()));
+                    if (!file.isDirectory()) {
+                        ValidatorResult result = Validator.checkXml(new FileInputStream(file));
+                        if (result.IsValid != null && result.IsValid) {
+                            logger.info("XML valid - '{}'", file.getName());
+                        } else {
+                            logger.warn("XML invalid - '{}'", file.getName());
+                            result.Messages.forEach(e -> logger.debug("   {}", e.toString()));
+                        }
                     }
                 }
             }
@@ -41,12 +45,14 @@ class ValidatorTest {
             File directory = directoryPath.toFile();
             if (directory.exists()) {
                 for (File file : Objects.requireNonNull(directory.listFiles())) {
-                    ValidatorResult result = Validator.checkPdf(new FileInputStream(file));
-                    if (result.IsValid != null && result.IsValid) {
-                        logger.info("pdf is valid - '{}'", file.getName());
-                    } else {
-                        logger.info("pdf is not valid - '{}'", file.getName());
-                        result.Messages.forEach(e -> logger.info("   {}", e.toString()));
+                    if (!file.isDirectory()) {
+                        ValidatorResult result = Validator.checkPdf(new FileInputStream(file));
+                        if (result.IsValid != null && result.IsValid) {
+                            logger.info("PDF valid - '{}'", file.getName());
+                        } else {
+                            logger.warn("PDF invalid - '{}'", file.getName());
+                            result.Messages.forEach(e -> logger.info("   {}", e.toString()));
+                        }
                     }
                 }
             }

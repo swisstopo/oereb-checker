@@ -1,380 +1,167 @@
 package ch.swisstopo.oerebchecker;
 
-import ch.swisstopo.oerebchecker.aws.S3Storage;
-import ch.swisstopo.oerebchecker.checks.GetCapabilities;
-import ch.swisstopo.oerebchecker.checks.GetEGRID;
-import ch.swisstopo.oerebchecker.checks.GetExtractById;
-import ch.swisstopo.oerebchecker.checks.GetVersions;
-import ch.swisstopo.oerebchecker.configs.Config;
+import ch.swisstopo.oerebchecker.core.checks.*;
+import ch.swisstopo.oerebchecker.storage.IStorageProvider;
+import ch.swisstopo.oerebchecker.storage.LocalStorageProvider;
+import ch.swisstopo.oerebchecker.storage.S3StorageProvider;
+import ch.swisstopo.oerebchecker.config.models.CantonConfig;
+import ch.swisstopo.oerebchecker.config.ConfigManager;
+import ch.swisstopo.oerebchecker.manager.MetadataManager;
+import ch.swisstopo.oerebchecker.manager.ResultManager;
+import ch.swisstopo.oerebchecker.results.CantonResult;
 import ch.swisstopo.oerebchecker.results.CheckResult;
-import ch.swisstopo.oerebchecker.results.Result;
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
+import ch.swisstopo.oerebchecker.models.Canton;
+import ch.swisstopo.oerebchecker.utils.RequestHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+import software.amazon.awssdk.utils.StringUtils;
 
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.Unmarshaller;
-
-import java.io.*;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-
 
 public class OerebChecker {
-    protected static final Logger logger = LoggerFactory.getLogger(OerebChecker.class);
+    private static final Logger logger = LoggerFactory.getLogger(OerebChecker.class);
 
-    private static final List<String> argsList = new ArrayList<>();
-    private static final Map<String, String> optsList = new HashMap<>();
-    private static final List<String> doubleOptsList = new ArrayList<>();
-
-    private static final String s3AccessKeyEnvKey = "S3AccessKey";
-    private static final String s3SecretKeyEnvKey = "S3SecretKey";
-
-    private static final String s3RegionNameEnvKey = "S3RegionName";
-    private static final String s3BucketEnvKey = "S3Bucket";
-    private static final String s3ConfigEnvKey = "S3Config";
-
-    private static S3Storage s3Storage = null;
-
-    private static Path outputDirectoryPath = Path.of("").toAbsolutePath().resolve("output");
-
+    private static IStorageProvider storageProvider = new LocalStorageProvider();
 
     public static void main(String[] args) {
         try {
-            if (initialise(args)) {
-
-                Config config = loadConfig();
-                if (config == null) {
-                    logger.error("Config could not be loaded");
-                    return;
-                }
-
-                int threadCount = 1;
-                if (config.Threads != null) {
-                    threadCount = config.Threads;
-                }
-
-                try (ExecutorService executor = Executors.newFixedThreadPool(threadCount)) {
-
-                    List<CompletableFuture<CheckResult>> completableFutures = new ArrayList<>();
-
-                    URI basicUri = URI.create(config.BasicUrl);
-                    if (config.OutputDirectoryPath != null) {
-                        outputDirectoryPath = Paths.get(config.OutputDirectoryPath).toAbsolutePath();
-                        logger.info("Output directory path set to: {}", outputDirectoryPath);
-                    }
-                    if (config.GetVersions != null) {
-                        for (var checkConfig : config.GetVersions) {
-                            completableFutures.add(CompletableFuture.supplyAsync(() -> new GetVersions(basicUri, checkConfig).run(), executor));
-                        }
-                    }
-                    if (config.GetCapabilities != null) {
-                        for (var checkConfig : config.GetCapabilities) {
-                            completableFutures.add(CompletableFuture.supplyAsync(() -> new GetCapabilities(basicUri, checkConfig).run(), executor));
-                        }
-                    }
-                    if (config.GetEGRID != null) {
-                        for (var checkConfig : config.GetEGRID) {
-                            completableFutures.add(CompletableFuture.supplyAsync(() -> new GetEGRID(basicUri, checkConfig).run(), executor));
-                        }
-                    }
-                    if (config.GetExtractById != null) {
-                        for (var checkConfig : config.GetExtractById) {
-                            completableFutures.add(CompletableFuture.supplyAsync(() -> new GetExtractById(basicUri, checkConfig).run(), executor));
-                        }
-                    }
-
-                    CompletableFuture<Void> allFutures = CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0]));
-                    allFutures.thenRun(() -> {
-
-                        Result result = new Result();
-                        for (var check : completableFutures) {
-                            try {
-                                result.addCheckResult(check.get());
-                            } catch (InterruptedException | ExecutionException e) {
-                                logger.error(e.getCause().getMessage(), e);
-                            }
-                        }
-
-                        writeResults(result);
-
-                    }).exceptionally(throwable -> {
-                        logger.error(throwable.getMessage(), throwable);
-                        return null;
-                    });
-                    allFutures.join();
-
-                    executor.shutdown();
-                } // Create a custom thread pool
-            }
+            execute(args);
+            System.exit(0);
         } catch (Exception ex) {
-            logger.error(ex.getMessage(), ex);
+            logger.error("Critical failure: {}", ex.getMessage(), ex);
+            System.exit(1);
         }
     }
 
-    private static boolean initialise(String[] args) {
+    public static void execute(String[] args) throws Exception {
+        CliParser cli = new CliParser(args);
+        logger.trace("Application started with arguments: {}", String.join(" ", args));
 
-        parseArgs(args);
-
-        if (optsList.containsKey("-info") || optsList.containsKey("-help")) {
-
-            logger.info("params:");
-            logger.info("   -cFP -> config file path");
-            //logger.info("   -oDP -> output directory path");
-
-            return false;
+        if (cli.isHelpRequested()) {
+            cli.printHelp();
+            System.exit(0);
         }
 
-        return true;
+        // 1. Initialize Storage
+        S3StorageProvider.createFromEnv("S3ResultBucket").ifPresent(provider -> {
+            storageProvider = provider;
+            logger.info("S3 Storage initialized.");
+        });
+
+        // 2. Load Config
+        boolean localConfigLoaded = ConfigManager.loadConfigs(cli);
+
+        if (!localConfigLoaded && storageProvider instanceof S3StorageProvider) {
+            logger.info("Local config not found, attempting to load from S3 config bucket...");
+            S3StorageProvider.createFromEnv("S3ConfigBucket")
+                    .ifPresent(ConfigManager::loadConfigs);
+        }
+
+        if (ConfigManager.getCantonConfigs().isEmpty()) {
+            logger.error("Application configuration is empty or could not be parsed. Please check your config source.");
+            System.exit(1);
+        }
+
+        // 3. Load Metadata
+        MetadataManager.loadMetadata();
+
+        // 4. Execution Loop
+        for (Canton canton : ConfigManager.getCantonConfigs().keySet()) {
+            processCanton(canton);
+        }
+
+        logger.info("All checks completed successfully.");
     }
 
-    private static Config loadConfig() {
+    private static void processCanton(Canton canton) {
 
-        byte[] configData = null;
-        String configFilePathString = null;
+        var config = ConfigManager.getCantonConfigs().get(canton);
+        logger.trace("Processing Canton: {} with base URL: {}", canton, config.BasicUrl);
 
-        if (optsList.isEmpty()) {
-            StringBuilder logEntryBuilder = new StringBuilder();
-            String lineSeparator = System.lineSeparator();
-
-            String s3AccessKey = System.getenv(s3AccessKeyEnvKey);
-            String s3SecretKey = System.getenv(s3SecretKeyEnvKey);
-            String s3RegionName = System.getenv(s3RegionNameEnvKey);
-            String s3BucketName = System.getenv(s3BucketEnvKey);
-            configFilePathString = System.getenv(s3ConfigEnvKey);
-
-            if (s3RegionName == null || s3RegionName.isBlank() ||
-                    s3BucketName == null || s3BucketName.isBlank() ||
-                    configFilePathString == null || configFilePathString.isBlank()
-            ) {
-                logEntryBuilder.delete(0, logEntryBuilder.length());
-                logEntryBuilder.append("No value for environment variable/s:");
-
-                if (s3RegionName == null || s3RegionName.isBlank()) {
-                    logEntryBuilder.append(lineSeparator);
-                    logEntryBuilder.append("- " + s3RegionNameEnvKey);
-                }
-                if (s3BucketName == null || s3BucketName.isBlank()) {
-                    logEntryBuilder.append(lineSeparator);
-                    logEntryBuilder.append("- " + s3BucketEnvKey);
-                }
-                if (configFilePathString == null || configFilePathString.isBlank()) {
-                    logEntryBuilder.append(lineSeparator);
-                    logEntryBuilder.append("- " + s3ConfigEnvKey);
-                }
-                logger.error(logEntryBuilder.toString());
-
-            } else {
-
-                if (s3AccessKey == null || s3AccessKey.isBlank() ||
-                        s3SecretKey == null || s3SecretKey.isBlank()
-                ) {
-                    logEntryBuilder.delete(0, logEntryBuilder.length());
-                    logEntryBuilder.append("No value for environment variable/s:");
-
-                    if (s3AccessKey == null || s3AccessKey.isBlank()) {
-                        logEntryBuilder.append(lineSeparator);
-                        logEntryBuilder.append("- " + s3AccessKeyEnvKey);
-                    }
-                    if (s3SecretKey == null || s3SecretKey.isBlank()) {
-                        logEntryBuilder.append(lineSeparator);
-                        logEntryBuilder.append("- " + s3SecretKeyEnvKey);
-                    }
-
-                    logger.debug(logEntryBuilder.toString());
-                    s3Storage = new S3Storage(s3RegionName, s3BucketName);
-
-                } else {
-                    s3Storage = new S3Storage(s3AccessKey, s3SecretKey, s3RegionName, s3BucketName);
-                }
-
-                configData = s3Storage.GetBucketObject(configFilePathString);
-            }
-        } else {
-            for (var entry : optsList.entrySet()) {
-
-                if (entry.getKey().equals("-cFP")) {
-                    configFilePathString = entry.getValue();
-                    try {
-                        Path absolutePath = Paths.get(configFilePathString).toAbsolutePath();
-                        configData = Files.readAllBytes(absolutePath);
-                    } catch (IOException e) {
-                        logger.error("Can not read config file: {}", configFilePathString, e);
-                    }
-                }
-                /*
-                if (entry.getKey().equals("-oDP")) {
-                    try {
-                        outputDirectoryPath = Paths.get(entry.getValue());
-                    } catch (InvalidPathException e) {
-                        logger.error("Can not read output directory path: {}", entry.getValue(), e);
-                    }
-                }
-                */
-            }
+        // Proxy Settings
+        if (StringUtils.isNotBlank(config.ProxyHostname)) {
+            RequestHelper.setProxySettings(config.ProxyHostname, config.ProxyPort, config.ProxyUser, config.ProxyPassword);
         }
 
-        if (configData != null) {
+        int threadCount = 1;
+        if (config.Threads != null) {
+            threadCount = config.Threads;
+        }
 
-            String configContent = new String(configData, StandardCharsets.UTF_8);
-            if (configFilePathString.toLowerCase().endsWith(".json")) {
+        try (ExecutorService executor = Executors.newFixedThreadPool(threadCount)) {
+            URI baseUri = URI.create(config.BasicUrl);
+            List<ICheck> taskList = new ArrayList<>();
+
+            if (config.GetVersions != null) {
+                config.GetVersions.forEach(c -> taskList.add(new GetVersions(baseUri, c)));
+            }
+            if (config.GetCapabilities != null) {
+                config.GetCapabilities.forEach(c -> taskList.add(new GetCapabilities(baseUri, c)));
+            }
+            if (config.GetEGRID != null) {
+                config.GetEGRID.forEach(c -> taskList.add(new GetEGRID(baseUri, c)));
+            }
+            if (config.GetExtractById != null) {
+                config.GetExtractById.stream()
+                        .flatMap(c -> c.getPossibleConfigs().stream())
+                        .forEach(pc -> {
+                            logger.trace("Adding GetExtractById task for Canton {} with config: {}", canton, pc);
+                            taskList.add(new GetExtractById(baseUri, pc));
+                        });
+            }
+
+            logger.trace("Submitting {} tasks to executor for Canton {}", taskList.size(), canton);
+
+            String cantonName = canton.name();
+            List<CompletableFuture<CheckResult>> futures = taskList.stream()
+                    .map(check -> CompletableFuture.supplyAsync(() -> {
+                        // Set context for the worker thread
+                        MDC.put("canton", cantonName);
+                        try {
+                            return check.run();
+                        } finally {
+                            MDC.remove("canton");
+                        }
+                    }, executor))
+                    .toList();
+
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+            CantonResult result = new CantonResult(canton);
+
+            futures.forEach(f -> {
                 try {
-                    Gson gson = new Gson();
-                    return gson.fromJson(configContent, Config.class);
-                } catch (JsonSyntaxException e) {
-                    throw new RuntimeException(e);
+                    result.addCheckResult(f.get());
+                } catch (Exception e) {
+                    logger.error("Check failed", e);
                 }
-            } else if (configFilePathString.toLowerCase().endsWith(".xml")) {
-                Config config;
-                try {
-                    StringReader sr = new StringReader(configContent);
-                    JAXBContext jaxbContext = JAXBContext.newInstance(Config.class);
-                    Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
-                    config = (Config) unmarshaller.unmarshal(sr);
-                } catch (JAXBException e) {
-                    throw new RuntimeException(e);
-                }
-                return config;
-            }
-        }
+            });
 
-        return null;
-    }
+            Path outputDirectoryPath = getOutputDirectoryPath(config);
+            logger.info("Finalizing Canton {}. Writing results to {} via provider {}", canton, outputDirectoryPath, storageProvider.getClass().getSimpleName());
 
-    private static void writeResults(Result result) {
-
-        File outputDirectory = outputDirectoryPath.toFile();
-
-        boolean outputDirectoryExists = outputDirectory.exists();
-        if (!outputDirectoryExists) {
-            try {
-                outputDirectoryExists = outputDirectory.mkdirs();
-            } catch (SecurityException ex) {
-                logger.error("Can not create directory {}", outputDirectoryPath, ex);
-            }
-        }
-
-        String resultJson = result.getJson();
-
-        String resultHtmlPage = readResultHtmlTemplate();
-        if(resultHtmlPage != null) {
-
-            String resultHtmlTableRows = result.getHtmlTableRows();
-            String resultHtmlCss = readResultHtmlCss();
-            resultHtmlPage = resultHtmlPage.replace("#inlineCssPlaceholder", resultHtmlCss != null ? resultHtmlCss : "");
-            resultHtmlPage = resultHtmlPage.replace("#executionDatePlaceHolder", result.ExecutionDate);
-            resultHtmlPage = resultHtmlPage.replace("#tableRowsPlaceHolder", resultHtmlTableRows);
-        }
-
-        Path outputJsonFilePath = null;
-        Path outputHtmlFilePath = null;
-
-        if (outputDirectoryExists) {
-            try {
-                outputJsonFilePath = outputDirectoryPath.resolve("result.json");
-                FileWriter fw = new FileWriter(outputJsonFilePath.toFile());
-
-                BufferedWriter bw = new BufferedWriter(fw);
-                bw.write(resultJson);
-                bw.close();
-
-                if (s3Storage != null) {
-                    s3Storage.PutBucketObject(outputJsonFilePath);
-                }
-
-            } catch (IOException ex) {
-                logger.error("Can not write results as json to file: {}", outputJsonFilePath, ex);
-            }
-
-            try {
-                outputHtmlFilePath = outputDirectoryPath.resolve("result.html");
-                FileWriter fw = new FileWriter(outputHtmlFilePath.toFile());
-
-                BufferedWriter bw = new BufferedWriter(fw);
-                bw.write(resultHtmlPage);
-                bw.close();
-
-                if (s3Storage != null) {
-                    s3Storage.PutBucketObject(outputJsonFilePath);
-                }
-
-            } catch (IOException ex) {
-                logger.error("Can not write results as html to file: {}", outputHtmlFilePath, ex);
-            }
-        }
-
-        logger.debug(resultJson);
-    }
-
-    // helper functions
-    private static void parseArgs(String[] args) {
-
-        for (int i = 0; i < args.length; i++) {
-            if (args[i].charAt(0) == '-') {
-                if (args[i].length() < 2) {
-                    throw new IllegalArgumentException("Not a valid argument: " + args[i]);
-                }
-                if (args[i].charAt(1) == '-') {
-                    if (args[i].length() < 3) {
-                        throw new IllegalArgumentException("Not a valid argument: " + args[i]);
-                    }
-                    // --opt
-                    doubleOptsList.add(args[i].substring(2));
-                } else {
-                    if (args.length - 1 == i) {
-                        throw new IllegalArgumentException("Expected arg after: " + args[i]);
-                    }
-                    // -opt
-                    optsList.put(args[i], args[i + 1]);
-                    i++;
-                }
-            } else {// arg
-                argsList.add(args[i]);
-            }
+            ResultManager.write(storageProvider, outputDirectoryPath, result);
         }
     }
 
-    private static String readResultHtmlTemplate() {
-        ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-        try (InputStream is = classLoader.getResourceAsStream("ch/swisstopo/oerebchecker/result.html")) {
-            if (is == null) return null;
-            try (InputStreamReader isr = new InputStreamReader(is);
-                 BufferedReader reader = new BufferedReader(isr)) {
-                return reader.lines().collect(Collectors.joining(System.lineSeparator()));
-            }
-        } catch (Exception e) {
-            logger.error("Can not read result html template: {}", e.getMessage());
-        }
-        return "";
-    }
+    private static Path getOutputDirectoryPath(CantonConfig config) {
 
-    private static String readResultHtmlCss() {
-        ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-        try (InputStream is = classLoader.getResourceAsStream("ch/swisstopo/oerebchecker/result.css")) {
-            if (is == null) return null;
-            try (InputStreamReader isr = new InputStreamReader(is);
-                 BufferedReader reader = new BufferedReader(isr)) {
-                return reader.lines().collect(Collectors.joining(System.lineSeparator()));
-            }
-        } catch (Exception e) {
-            logger.error("Can not read result css template: {}", e.getMessage());
+        String envPath = System.getenv("OUTPUT_PATH");
+        if (envPath != null) {
+            return Paths.get(envPath).toAbsolutePath();
         }
-        return "";
+        if (config.OutputDirectoryPath != null) {
+            return Paths.get(config.OutputDirectoryPath).toAbsolutePath();
+        }
+
+        return Path.of("").toAbsolutePath().resolve("output");
     }
 }

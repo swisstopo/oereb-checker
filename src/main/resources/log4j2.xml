@@ -6,20 +6,19 @@
                        https://logging.apache.org/xml/ns/log4j-config-2.xsd">
 
     <Appenders>
-        <Console name="CONSOLE">
-            <PatternLayout pattern="%d %p %c - %m%n"/>
+        <Console name="LambdaConsole">
+            <PatternLayout pattern="[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%X{canton}] [%t] %c{1}:%L - %msg%n"/>
         </Console>
-        <File name="FILE" fileName="out/logs/main.log">
-            <PatternLayout pattern="%d %p %c - %m%n"/>
+        <File name="File" fileName="./out/logs/oerebchecker.log">
+            <PatternLayout pattern="[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%X{canton}] [%t] %c{1}:%L - %msg%n"/>
         </File>
     </Appenders>
 
     <Loggers>
         <Logger name="org.verapdf" level="ERROR"/>
-        <Logger name="ch.swisstopo" level="INFO"/>
-        <Root level="ERROR">
-            <AppenderRef ref="CONSOLE"/>
-            <AppenderRef ref="FILE"/>
+        <Root level="TRACE">
+            <AppenderRef ref="LambdaConsole" level="TRACE"/>
+            <AppenderRef ref="File" level="DEBUG"/>
         </Root>
     </Loggers>
 
