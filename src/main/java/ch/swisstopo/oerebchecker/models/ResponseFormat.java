@@ -4,6 +4,7 @@ public enum ResponseFormat {
     json,
     pdf,
     url,
-    xml
+    xml,
+    csv
 }
 

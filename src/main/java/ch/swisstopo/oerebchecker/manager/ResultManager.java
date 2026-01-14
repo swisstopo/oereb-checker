@@ -1,5 +1,6 @@
 package ch.swisstopo.oerebchecker.manager;
 
+import ch.swisstopo.oerebchecker.models.Canton;
 import ch.swisstopo.oerebchecker.storage.IStorageProvider;
 import ch.swisstopo.oerebchecker.results.CantonResult;
 import ch.swisstopo.oerebchecker.utils.ResourceHelper;
@@ -22,18 +23,67 @@ public class ResultManager {
 
         Document htmlPage = readResultHtmlTemplate(storage, outputHtmlFilePath);
         if (htmlPage != null) {
-            Element resultPlaceholder = htmlPage.selectFirst("div#" + cantonResult.getCanton().name().toLowerCase() + "-checkResultPlaceholder");
+            clearCanton(htmlPage, cantonResult.getCanton());
+
+            String placeholderId = getCantonPlaceholderId(cantonResult.getCanton());
+            Element resultPlaceholder = htmlPage.getElementById(placeholderId);
+
             if (resultPlaceholder != null) {
-                resultPlaceholder.replaceWith(cantonResult.getAsHtml());
+                long total = cantonResult.getResults().size();
+                long successful = cantonResult.getResults().stream().filter(r -> r.Successful).count();
+                String statusClass = (successful == total) ? "all-success" : "has-failures";
+
+                Element details = new Element("details");
+                details.id(placeholderId);
+                details.addClass("canton-section").addClass(statusClass);
+
+                Element summary = new Element("summary");
+                summary.append("<span class='canton-title'>Canton: " + cantonResult.getCanton() + "</span>");
+                summary.append("<span class='canton-stats'>" + successful + " / " + total + " successful</span>");
+
+                details.appendChild(summary);
+                details.appendChild(cantonResult.getAsHtml());
+
+                resultPlaceholder.replaceWith(details);
             }
 
-            byte[] htmlBytes = htmlPage.html().getBytes(StandardCharsets.UTF_8);
-            storage.writeObject(outputHtmlFilePath, new ByteArrayInputStream(htmlBytes));
+            // Update footer year dynamically
+            Element footerPara = htmlPage.selectFirst("footer p");
+            if (footerPara != null) {
+                int currentYear = java.time.LocalDate.now().getYear();
+                footerPara.text("© " + currentYear + " Swisstopo - OeREB Checker");
+            }
+
+            byte[] htmlBytes = htmlPage.outerHtml().getBytes(StandardCharsets.UTF_8);
+            if (!storage.writeObject(outputHtmlFilePath, new ByteArrayInputStream(htmlBytes))) {
+                logger.error("Failed to write html file '{}'", outputHtmlFilePath);
+            }
         }
 
         String resultJson = cantonResult.getAsJsonString();
         if (resultJson != null) {
-            storage.writeObject(outputJsonFilePath, new ByteArrayInputStream(resultJson.getBytes(StandardCharsets.UTF_8)));
+            if (!storage.writeObject(outputJsonFilePath, new ByteArrayInputStream(resultJson.getBytes(StandardCharsets.UTF_8)))) {
+                logger.error("Failed to write json file '{}'", outputJsonFilePath);
+            }
+        }
+    }
+
+    private static String getCantonPlaceholderId(Canton canton) {
+        return canton.name().toLowerCase() + "-checkResultPlaceholder";
+    }
+
+    private static void clearCanton(Document doc, Canton canton) {
+
+        String placeholderId = getCantonPlaceholderId(canton);
+        Element existingSection = doc.getElementById(placeholderId);
+
+        if (existingSection != null) {
+            Element pendingDiv = new Element("div");
+            pendingDiv.id(placeholderId);
+            pendingDiv.addClass("canton-section").addClass("disabled");
+            pendingDiv.append("<div class='summary-mock'><span class='canton-title'>Canton: " + canton + "</span><span class='canton-stats'>Pending...</span></div>");
+
+            existingSection.replaceWith(pendingDiv);
         }
     }
 

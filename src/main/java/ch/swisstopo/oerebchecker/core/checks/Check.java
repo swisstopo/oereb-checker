@@ -1,6 +1,7 @@
 package ch.swisstopo.oerebchecker.core.checks;
 
 import ch.swisstopo.oerebchecker.config.models.CheckConfig;
+import ch.swisstopo.oerebchecker.core.validation.ValidatorMessage;
 import ch.swisstopo.oerebchecker.results.CheckResult;
 import ch.swisstopo.oerebchecker.models.ResponseFormat;
 import ch.swisstopo.oerebchecker.models.ResponseStatusCode;
@@ -44,6 +45,7 @@ public abstract class Check implements ICheck {
     protected boolean canRun = false;
     protected ResponseFormat responseFormat = null;
     protected int responseStatusCode = ResponseStatusCode.OK;
+    protected boolean provoke500 = false;
 
     private Document document = null;
 
@@ -70,6 +72,11 @@ public abstract class Check implements ICheck {
 
         if (config.ExpectedStatusCode != null) {
             responseStatusCode = config.ExpectedStatusCode;
+        }
+
+        if(config.Provoke500) {
+            responseStatusCode = ResponseStatusCode.INTERNAL_SERVER_ERROR;
+            provoke500 = true;
         }
 
         return true;
@@ -127,9 +134,17 @@ public abstract class Check implements ICheck {
 
         if (result.StatusCode == responseStatusCode) {
             result.StatusCodeCorrect = true;
+        } else {
+            result.addMessage("Protocol Validation",
+                    new ValidatorMessage("HTTP Protocol", "Status Code", "Expected " + responseStatusCode + ", but found " + result.StatusCode, "")
+            );
         }
+
         if (result.StatusCode == ResponseStatusCode.SEE_OTHER && responseFormat != ResponseFormat.url) {
             result.StatusCodeCorrect = false;
+            result.addMessage("Protocol Validation",
+                    new ValidatorMessage("HTTP Protocol", "Redirect", "Unexpected redirect (303) for non-URL format request.", "")
+            );
         }
 
         var headers = response.headers().map();
@@ -138,7 +153,14 @@ public abstract class Check implements ICheck {
         if (headers.containsKey("Content-Type")) {
             result.ContentType = headers.get("Content-Type").getFirst();
             if (StringUtils.isNotBlank(result.ContentType)) {
-                if (result.StatusCode == ResponseStatusCode.OK) {
+                if (result.StatusCode == ResponseStatusCode.SEE_OTHER) {
+                    // result.ContentTypeCorrect = result.ContentType.startsWith("text/html");
+                    result.ContentTypeCorrect = null;
+
+                } else if (provoke500 && result.StatusCode == ResponseStatusCode.INTERNAL_SERVER_ERROR) {
+                    result.ContentTypeCorrect = null;
+
+                } else {
                     switch (responseFormat) {
                         case pdf:
                             result.ContentTypeCorrect = result.ContentType.startsWith("application/pdf");
@@ -152,8 +174,12 @@ public abstract class Check implements ICheck {
                         default:
                             result.ContentTypeCorrect = false;
                     }
-                } else if (result.StatusCode == ResponseStatusCode.SEE_OTHER) {
-                    result.ContentTypeCorrect = result.ContentType.startsWith("text/html");
+                }
+
+                if (result.ContentTypeCorrect != null && !result.ContentTypeCorrect) {
+                    result.addMessage("Protocol Validation",
+                            new ValidatorMessage("HTTP Protocol", "Content-Type", "Unexpected Content-Type: " + result.ContentType + " for format: " + responseFormat, "")
+                    );
                 }
             }
         } else if (result.StatusCode == ResponseStatusCode.NO_CONTENT) {
@@ -170,7 +196,7 @@ public abstract class Check implements ICheck {
                 byte[] xmlData = is.readAllBytes();
 
                 var validationResult = Validator.checkXml(new ByteArrayInputStream(xmlData));
-                validationResult.Messages.forEach(result::addXsdValidationFailure);
+                validationResult.Messages.forEach(msg -> result.addMessage("XSD Validation", msg));
 
                 if (validationResult.IsValid) {
                     logger.trace("XML is valid");
@@ -186,7 +212,7 @@ public abstract class Check implements ICheck {
 
         } else if (responseFormat == ResponseFormat.pdf) {
             var validationResult = Validator.checkPdf(is);
-            validationResult.Messages.forEach(result::addPdfValidationFailure);
+            validationResult.Messages.forEach(msg -> result.addMessage("PDF Validation", msg));
             result.PdfIsValid = validationResult.IsValid;
         }
     }

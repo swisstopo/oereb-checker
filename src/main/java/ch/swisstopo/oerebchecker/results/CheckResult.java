@@ -6,7 +6,9 @@ import com.google.gson.GsonBuilder;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CheckResult {
 
@@ -19,109 +21,62 @@ public class CheckResult {
     public Boolean ContentTypeCorrect = false;
 
     public Boolean XmlIsValid = null;
-    public List<ValidatorMessage> XsdValidationErrors = null;
-
+    public Boolean PdfIsValid = null;
     public Boolean SupportedVersionIsValid = null;
-
     public Boolean RealEstate_DPRIsValid = null;
     public Boolean RefsAreValid = null;
     public Boolean GeometryIsValid = null;
     public Boolean LangIsValid = null;
-
     public Boolean TopicsIsValid = null;
-    public List<ValidatorMessage> TopicsValidationErrors = null;
-
     public Boolean FederalTopicLawDocumentsIsValid = null;
-    public List<ValidatorMessage> FederalTopicLawDocumentErrors = null;
-
     public Boolean RestrictionOnLandownershipIsValid = null;
-    public List<ValidatorMessage> RestrictionOnLandownershipValidationErrors = null;
-
     public Boolean ImageAspectRatioIsValid = null;
-    public List<ValidatorMessage> ImageSizesValidationErrors = null;
-
     public Boolean GlossaryIsValid = null;
-    public List<ValidatorMessage> GlossaryValidationErrors = null;
-
     public Boolean DisclaimerIsValid = null;
-    public List<ValidatorMessage> DisclaimerValidationErrors = null;
-
+    public Boolean OfficeIsValid = null;
     public Boolean WithImagesIsValid = null;
 
-    public Boolean PdfIsValid = null;
-    public List<ValidatorMessage> PdfValidationErrors = null;
-
     public boolean Successful = false;
-
     public Boolean HasError = null;
     public String ErrorMessage = null;
+
+    private final Map<String, List<ValidatorMessage>> validationMessages = new LinkedHashMap<>();
 
     public CheckResult(URI uri) {
         Url = uri.toString();
     }
 
+    public void addMessage(String category, ValidatorMessage message) {
+        validationMessages.computeIfAbsent(category, k -> new ArrayList<>()).add(message);
+    }
+
+    public Map<String, List<ValidatorMessage>> getValidationMessages() {
+        return validationMessages;
+    }
+
     public void calculateResult() {
-        Successful =
-                StatusCodeCorrect &&
-                        (ContentTypeCorrect == null || ContentTypeCorrect) &&
-                        (XmlIsValid == null || XmlIsValid) &&
-                        (PdfIsValid == null || PdfIsValid);
+        Successful = StatusCodeCorrect
+                && isOk(ContentTypeCorrect)
+                && isOk(XmlIsValid)
+                && isOk(PdfIsValid)
+                && isOk(SupportedVersionIsValid)
+                && isOk(RealEstate_DPRIsValid)
+                && isOk(RefsAreValid)
+                && isOk(GeometryIsValid)
+                && isOk(LangIsValid)
+                && isOk(TopicsIsValid)
+                && isOk(FederalTopicLawDocumentsIsValid)
+                && isOk(RestrictionOnLandownershipIsValid)
+                && isOk(ImageAspectRatioIsValid)
+                && isOk(GlossaryIsValid)
+                && isOk(DisclaimerIsValid)
+                && isOk(OfficeIsValid)
+                && isOk(WithImagesIsValid)
+                && isOk(HasError == null || !HasError);
     }
 
-    public void addXsdValidationFailure(ValidatorMessage validatorMessage) {
-        if (XsdValidationErrors == null) {
-            XsdValidationErrors = new ArrayList<>();
-        }
-        XsdValidationErrors.add(validatorMessage);
-    }
-
-    public void addTopicsValidationError(ValidatorMessage validatorMessage) {
-        if (TopicsValidationErrors == null) {
-            TopicsValidationErrors = new ArrayList<>();
-        }
-        TopicsValidationErrors.add(validatorMessage);
-    }
-
-    public void addFederalTopicLawDocumentsError(ValidatorMessage validatorMessage) {
-        if (FederalTopicLawDocumentErrors == null) {
-            FederalTopicLawDocumentErrors = new ArrayList<>();
-        }
-        FederalTopicLawDocumentErrors.add(validatorMessage);
-    }
-
-    public void addRestrictionOnLandownershipValidationError(ValidatorMessage validatorMessage) {
-        if (RestrictionOnLandownershipValidationErrors == null) {
-            RestrictionOnLandownershipValidationErrors = new ArrayList<>();
-        }
-        RestrictionOnLandownershipValidationErrors.add(validatorMessage);
-    }
-
-    public void addImageValidationError(ValidatorMessage validatorMessage) {
-        if (ImageSizesValidationErrors == null) {
-            ImageSizesValidationErrors = new ArrayList<>();
-        }
-        ImageSizesValidationErrors.add(validatorMessage);
-    }
-
-    public void addGlossaryValidationError(ValidatorMessage validatorMessage) {
-        if (GlossaryValidationErrors == null) {
-            GlossaryValidationErrors = new ArrayList<>();
-        }
-        GlossaryValidationErrors.add(validatorMessage);
-    }
-
-    public void addDisclaimerValidationError(ValidatorMessage validatorMessage) {
-        if (DisclaimerValidationErrors == null) {
-            DisclaimerValidationErrors = new ArrayList<>();
-        }
-        DisclaimerValidationErrors.add(validatorMessage);
-    }
-
-    public void addPdfValidationFailure(ValidatorMessage validatorMessage) {
-        if (PdfValidationErrors == null) {
-            PdfValidationErrors = new ArrayList<>();
-        }
-        PdfValidationErrors.add(validatorMessage);
+    private boolean isOk(Boolean validationFlag) {
+        return validationFlag == null || validationFlag;
     }
 
     public String getJson() {

@@ -49,7 +49,7 @@ public class FederalTopicManager {
 
     private static String getOfficialNumberFromElement(Element el) {
         try {
-            return xpath.getString(el, "ed:OfficialNumber/ed:Text");
+            return xpath.getString(el, "ed:OfficialNumber/ed:LocalisedText/ed:Text");
         } catch (Exception e) {
             logger.error("XPath error in getOfficialNumberFromElement: {}", e.getMessage());
             return "";

@@ -24,7 +24,13 @@ public class GetEGRID extends Check {
         );
 
         if (validateConfig(config)) {
-            uri = RequestHelper.buildUri(urlTemplate, basicUri, responseFormat, requestParams);
+
+            if (config.Provoke500) {
+                uri = RequestHelper.buildUri(urlTemplate, basicUri, ResponseFormat.csv, requestParams);
+            } else {
+                uri = RequestHelper.buildUri(urlTemplate, basicUri, responseFormat, requestParams);
+            }
+
             if (uri != null) {
                 canRun = true;
                 result = new CheckResult(uri);
@@ -38,10 +44,10 @@ public class GetEGRID extends Check {
             return false;
         }
 
-        if (StringUtils.isNotBlank(config.EN)){
+        if (StringUtils.isNotBlank(config.EN)) {
             requestParams.put("EN", config.EN);
         }
-        if (StringUtils.isNotBlank(config.GNSS)){
+        if (StringUtils.isNotBlank(config.GNSS)) {
             requestParams.put("GNSS", config.GNSS);
         }
         if (StringUtils.isNotBlank(config.IDENTDN)) {
@@ -53,7 +59,7 @@ public class GetEGRID extends Check {
         if (config.POSTALCODE != null) {
             requestParams.put("POSTALCODE", config.POSTALCODE);
         }
-        if (StringUtils.isNotBlank(config.LOCALISATION)){
+        if (StringUtils.isNotBlank(config.LOCALISATION)) {
             requestParams.put("LOCALISATION", config.LOCALISATION);
         }
 

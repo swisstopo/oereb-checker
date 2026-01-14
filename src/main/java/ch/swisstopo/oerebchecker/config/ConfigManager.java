@@ -113,11 +113,14 @@ public class ConfigManager {
                 String type = cli.getType();
                 String format = cli.getFormat() != null ? cli.getFormat() : "xml";
                 Integer expectedStatus = cli.getExpectedStatusCode();
+                boolean provoke500 = cli.getProvoke500();
+
 
                 if ("GetVersions".equalsIgnoreCase(type)) {
                     var c = new GetVersionsConfig();
                     c.ExpectedStatusCode = expectedStatus;
                     c.FORMAT = format;
+                    c.Provoke500 = provoke500;
 
                     if (!c.isValid()) {
                         throw new IllegalArgumentException("Invalid GetVersions params");
@@ -128,6 +131,7 @@ public class ConfigManager {
                     var c = new GetCapabilitiesConfig();
                     c.ExpectedStatusCode = expectedStatus;
                     c.FORMAT = format;
+                    c.Provoke500 = provoke500;
 
                     if (!c.isValid()) {
                         throw new IllegalArgumentException("Invalid GetCapabilities params");
@@ -138,6 +142,7 @@ public class ConfigManager {
                     var c = new GetEGRIDConfig();
                     c.ExpectedStatusCode = expectedStatus;
                     c.FORMAT = format;
+                    c.Provoke500 = provoke500;
                     c.EN = cli.getParam("EN");
                     c.IDENTDN = cli.getParam("IDENTDN");
                     c.NUMBER = cli.getParam("NUMBER");
@@ -155,6 +160,7 @@ public class ConfigManager {
                     var c = new GetExtractByIdConfig();
                     c.ExpectedStatusCode = expectedStatus;
                     c.FORMAT = format;
+                    c.Provoke500 = provoke500;
                     c.EGRID = cli.getParam("EGRID");
                     c.IDENTDN = cli.getParam("IDENTDN");
                     c.NUMBER = cli.getParam("NUMBER");

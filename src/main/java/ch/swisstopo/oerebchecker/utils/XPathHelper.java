@@ -102,11 +102,18 @@ public class XPathHelper {
     }
 
     public String getPath(Node node) {
+        String fullPath = getPathInternal(node);
+        if (StringUtils.isNotBlank(fullPath)) {
+            logger.trace("Resolved path: {}", fullPath);
+        }
+        return fullPath;
+    }
+
+    private String getPathInternal(Node node) {
         if (node == null) return "";
         Node parent = node.getParentNode();
 
         if (parent == null || parent.getNodeType() == Node.DOCUMENT_NODE) {
-            logger.trace("XPath path resolution reached document root.");
             return "";
         }
 
@@ -143,9 +150,7 @@ public class XPathHelper {
             pathPart += "[" + displayText + "]";
         }
 
-        logger.trace("Resolved path part: {}", pathPart);
-        String parentPath = getPath(parent);
-        return parentPath + pathPart;
+        return getPathInternal(parent) + pathPart;
     }
 
     public Node getFirstChildNode(Node node, String nodeName) {

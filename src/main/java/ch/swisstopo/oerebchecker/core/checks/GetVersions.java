@@ -24,7 +24,13 @@ public class GetVersions extends Check {
         supportedFormats = Arrays.asList(ResponseFormat.xml, ResponseFormat.json);
 
         if (validateConfig(config)) {
-            uri = RequestHelper.buildUri(urlTemplate, basicUri, responseFormat, requestParams);
+
+            if (config.Provoke500) {
+                uri = RequestHelper.buildUri(urlTemplate, basicUri, ResponseFormat.csv, requestParams);
+            } else {
+                uri = RequestHelper.buildUri(urlTemplate, basicUri, responseFormat, requestParams);
+            }
+
             if (uri != null) {
                 canRun = true;
                 result = new CheckResult(uri);

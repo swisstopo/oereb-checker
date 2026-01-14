@@ -1,5 +1,6 @@
 package ch.swisstopo.oerebchecker.results;
 
+import ch.swisstopo.oerebchecker.core.validation.ValidatorMessage;
 import ch.swisstopo.oerebchecker.models.Canton;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -31,7 +32,7 @@ public class CantonResult {
 
     public CantonResult(Canton canton) {
         this.canton = canton;
-        executionDate = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME); // DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
+        executionDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
     }
 
     public void addCheckResult(CheckResult checkResult) {
@@ -50,52 +51,75 @@ public class CantonResult {
     }
 
     public Element getAsHtml() {
+        StringBuilder html = new StringBuilder();
+        html.append("<div class='canton-result-container'>");
+        // html.append("<h2>Canton: ").append(canton).append("</h2>");
+        html.append("<p class='meta'>Execution Date: ").append(executionDate).append("</p>");
 
-        StringBuilder htmlTableRows = new StringBuilder();
-
-        htmlTableRows.append("<table class=\"responsive-table\">");
-        htmlTableRows.append("<thead>");
-        htmlTableRows.append("<tr>");
-        htmlTableRows.append("<th scope=\"col\">Url</th>");
-        htmlTableRows.append("<th scope=\"col\">StatusCode</th>");
-        htmlTableRows.append("<th scope=\"col\">ContentType</th>");
-        htmlTableRows.append("<th scope=\"col\">XmlIsValid</th>");
-        htmlTableRows.append("<th scope=\"col\">PdfIsValid</th>");
-        htmlTableRows.append("<th scope=\"col\">Check successful</th>");
-        htmlTableRows.append("</tr>");
-        htmlTableRows.append("</thead>");
-        htmlTableRows.append("<tfoot>");
-        htmlTableRows.append("<tr>");
-        htmlTableRows.append("<td colspan=\"6\">Execution Date: ").append(executionDate).append("</td>");
-        htmlTableRows.append("</tr>");
-        htmlTableRows.append("</tfoot>");
-        htmlTableRows.append("<tbody>");
-
-        String colClass;
         for (CheckResult result : results) {
-            htmlTableRows.append("<tr>");
-            htmlTableRows.append("<th scope=\"row\">").append(result.Url).append("</td>");
+            String statusClass = result.Successful ? "success" : "failure";
+            html.append("<div class='check-card ").append(statusClass).append("'>");
 
-            colClass = result.StatusCodeCorrect ? "green" : "red";
-            htmlTableRows.append("<td class=\"").append(colClass).append("\">").append(result.StatusCode).append("</td>");
+            // Header: Always visible
+            html.append("<div class='card-header'>");
+            html.append("<span class='status-icon'>").append(result.Successful ? "✔" : "✘").append("</span>");
+            html.append("<span class='url'>").append(result.Url).append("</span>");
+            html.append("<span class='badge'>HTTP ").append(result.StatusCode).append("</span>");
+            html.append("</div>");
 
-            colClass = result.ContentTypeCorrect == null ? "" : (result.ContentTypeCorrect ? "green" : "red");
-            htmlTableRows.append("<td class=\"").append(colClass).append("\">").append(result.ContentType == null ? "-" : result.ContentType).append("</td>");
+            // Content: Details and Validation Flags
+            html.append("<div class='card-body'>");
+            html.append("<div class='validation-grid'>");
+            appendFlag(html, "Status Code", result.StatusCodeCorrect);
+            appendFlag(html, "Content Type", result.ContentTypeCorrect);
+            appendFlag(html, "XML Schema", result.XmlIsValid);
+            appendFlag(html, "PDF Valid", result.PdfIsValid);
+            appendFlag(html, "Geometry", result.GeometryIsValid);
+            appendFlag(html, "Languages", result.LangIsValid);
+            appendFlag(html, "Topics", result.TopicsIsValid);
+            appendFlag(html, "Glossary", result.GlossaryIsValid);
+            appendFlag(html, "Office (UID)", result.OfficeIsValid);
+            html.append("</div>");
 
-            colClass = result.XmlIsValid == null ? "" : (result.XmlIsValid ? "green" : "red");
-            htmlTableRows.append("<td class=\"").append(colClass).append("\">").append(result.XmlIsValid == null ? "-" : result.XmlIsValid).append("</td>");
+            result.getValidationMessages().forEach((category, messages) -> {
+                appendErrorDetails(html, category, messages);
+            });
 
-            colClass = result.PdfIsValid == null ? "" : (result.PdfIsValid ? "green" : "red");
-            htmlTableRows.append("<td class=\"").append(colClass).append("\">").append(result.PdfIsValid == null ? "-" : result.PdfIsValid).append("</td>");
+            if (result.ErrorMessage != null) {
+                appendErrorDetails(html, "System Error", List.of(new ValidatorMessage("Critical", result.ErrorMessage)));
+            }
 
-            colClass = result.Successful ? "green" : "red";
-            htmlTableRows.append("<td class=\"").append(colClass).append("\">").append(result.Successful).append("</td>");
-            htmlTableRows.append("</tr>");
+            html.append("</div>"); // End card-body
+            html.append("</div>"); // End check-card
         }
+        html.append("</div>");
 
-        htmlTableRows.append("</tbody>");
-        htmlTableRows.append("</table>");
+        return Jsoup.parse(html.toString()).selectFirst("div.canton-result-container");
+    }
 
-        return Jsoup.parse(htmlTableRows.toString()).selectFirst("table");
+    private void appendFlag(StringBuilder sb, String label, Boolean flag) {
+        if (flag == null) {
+            return;
+        }
+        String color = flag ? "#28a745" : "#dc3545";
+        sb.append("<div class='flag'><span style='color:").append(color).append("'>●</span> ").append(label).append("</div>");
+    }
+
+    private void appendErrorDetails(StringBuilder sb, String title, List<ValidatorMessage> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return;
+        }
+        sb.append("<details class='error-details'>");
+        sb.append("<summary>").append(title).append(" (").append(messages.size()).append(")</summary>");
+        sb.append("<ul>");
+        for (ValidatorMessage msg : messages) {
+            sb
+                    .append("<li><strong>")
+                    .append(msg.Rule != null ? msg.Rule : "Error")
+                    .append(":</strong> ")
+                    .append(msg.Message).append(" - ").append(msg.Error)
+                    .append("</li>");
+        }
+        sb.append("</ul></details>");
     }
 }

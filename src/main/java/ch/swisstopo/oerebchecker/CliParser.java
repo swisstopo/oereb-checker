@@ -51,6 +51,11 @@ public class CliParser {
         return getParam("format");
     }
 
+    public boolean getProvoke500() {
+        String val = getParam("provoke500");
+        return Boolean.parseBoolean(val);
+    }
+
     public Integer getExpectedStatusCode() {
         String val = getParam("eSC");
         return val != null ? Integer.parseInt(val) : 200;
@@ -74,6 +79,9 @@ public class CliParser {
         logger.info("  -format [fmt] : Response format (xml, json, pdf)");
         logger.info("  -eSC [code]   : Expected HTTP status code (e.g., 200, 303)");
         logger.info("");
+        logger.info("Optional General Parameters:");
+        logger.info("  -provoke500 [bool]: Intentionally trigger a server error by requesting an invalid format (true/false)");
+        logger.info("");
         logger.info("Specific Check Parameters:");
         logger.info("  [GetEGRID] - Requires one of the following combinations:");
         logger.info("    Combination 1: -EN [coords]");
@@ -96,6 +104,6 @@ public class CliParser {
         logger.info("Examples:");
         logger.info("  java -jar oereb-checker.jar -cFP ./config/be/config.json");
         logger.info("  java -jar oereb-checker.jar -canton BE -baseurl https://www.oereb2.apps.be.ch -type GetEGRID -EN 2606296.340,1215309.120 -format json -eSC 200 -oDP ./my-result");
-        logger.info("  java -jar oereb-checker.jar -canton BE -baseurl https://www.oereb2.apps.be.ch -type GetExtractById -EGRID CH123456789 -format xml -GEOMETRY true -eSC 200 -oDP ./my-result");
+        logger.info("  java -jar oereb-checker.jar -canton BE -baseurl https://www.oereb2.apps.be.ch -type GetExtractById -EGRID CH123456789 -format xml -GEOMETRY true -eSC 200 -provoke500 true -oDP ./my-result");
     }
 }

@@ -26,7 +26,13 @@ public class GetCapabilities extends Check {
         );
 
         if (validateConfig(config)) {
-            uri = RequestHelper.buildUri(urlTemplate, basicUri, responseFormat, requestParams);
+
+            if (config.Provoke500) {
+                uri = RequestHelper.buildUri(urlTemplate, basicUri, ResponseFormat.csv, requestParams);
+            } else {
+                uri = RequestHelper.buildUri(urlTemplate, basicUri, responseFormat, requestParams);
+            }
+
             if (uri != null) {
                 canRun = true;
                 result = new CheckResult(uri);

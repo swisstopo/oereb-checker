@@ -101,13 +101,22 @@ public class OerebChecker {
             List<ICheck> taskList = new ArrayList<>();
 
             if (config.GetVersions != null) {
-                config.GetVersions.forEach(c -> taskList.add(new GetVersions(baseUri, c)));
+                config.GetVersions.forEach(c -> {
+                    logger.trace("Adding GetVersions task for Canton {} with config: {}", canton, c);
+                    taskList.add(new GetVersions(baseUri, c));
+                });
             }
             if (config.GetCapabilities != null) {
-                config.GetCapabilities.forEach(c -> taskList.add(new GetCapabilities(baseUri, c)));
+                config.GetCapabilities.forEach(c -> {
+                    logger.trace("Adding GetCapabilities task for Canton {} with config: {}", canton, c);
+                    taskList.add(new GetCapabilities(baseUri, c));
+                });
             }
             if (config.GetEGRID != null) {
-                config.GetEGRID.forEach(c -> taskList.add(new GetEGRID(baseUri, c)));
+                config.GetEGRID.forEach(c -> {
+                    logger.trace("Adding GetEGRID task for Canton {} with config: {}", canton, c);
+                    taskList.add(new GetEGRID(baseUri, c));
+                });
             }
             if (config.GetExtractById != null) {
                 config.GetExtractById.stream()

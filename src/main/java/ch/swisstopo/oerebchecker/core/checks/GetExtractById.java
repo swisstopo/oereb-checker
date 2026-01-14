@@ -56,7 +56,13 @@ public class GetExtractById extends Check {
         this.config = config;
 
         if (validateConfig(this.config)) {
-            uri = RequestHelper.buildUri(urlTemplate, this.basicUri, responseFormat, requestParams);
+
+            if (this.config.Provoke500) {
+                uri = RequestHelper.buildUri(urlTemplate, this.basicUri, ResponseFormat.csv, requestParams);
+            } else {
+                uri = RequestHelper.buildUri(urlTemplate, this.basicUri, responseFormat, requestParams);
+            }
+
             if (uri != null) {
                 canRun = true;
                 result = new CheckResult(uri);
@@ -144,7 +150,13 @@ public class GetExtractById extends Check {
             boolean egridMatch = egrid.equals(requestParams.get("EGRID"));
             boolean identMatch = !identDN.isBlank() && !number.isBlank();
 
-            return egridMatch || identMatch;
+            boolean valid = egridMatch || identMatch;
+            if (!valid) {
+                result.addMessage("Business Logic",
+                        new ValidatorMessage("Business Logic", "RealEstate Match", "XML RealEstate does not match requested EGRID: " + requestParams.get("EGRID"), "")
+                );
+            }
+            return valid;
         } catch (Exception e) {
             logger.error("XPath error in checkRealEstate_DPR: {}", e.getMessage());
             return false;
@@ -200,7 +212,11 @@ public class GetExtractById extends Check {
         try {
             HttpResponse<InputStream> response = getResponse(uri); // getResponse-fct has a cache
             if (response.statusCode() != 200) {
-                logger.debug("Failed to load reference '{}' (HTTP {}). Location: {}", uri, response.statusCode(), xpath.getPath(node));
+                String msg = "Failed to load reference '" + uri + "' (HTTP " + response.statusCode() + ")";
+                result.addMessage("Reference Check",
+                        new ValidatorMessage("Reference Check", "Broken Link", msg, xpath.getPath(node))
+                );
+                logger.debug("{}. Location: {}", msg, xpath.getPath(node));
                 return false;
             } else {
                 logger.debug("Successfully loaded reference '{}'", uri);
@@ -218,10 +234,19 @@ public class GetExtractById extends Check {
 
             if (config.GEOMETRY != null && config.GEOMETRY) {
                 int restrictionCount = xpath.getCount(doc, "//ed:RestrictionOnLandownership");
-                return geometryCount == restrictionCount;
-            } else {
-                return geometryCount == 0;
+                if (geometryCount != restrictionCount) {
+                    result.addMessage("Parameter Validation",
+                            new ValidatorMessage("Parameter Logic", "GEOMETRY=true", "Expected " + restrictionCount + " (one per restriction), but found " + geometryCount, "")
+                    );
+                    return false;
+                }
+            } else if (geometryCount > 0) {
+                result.addMessage("Parameter Validation",
+                        new ValidatorMessage("Parameter Logic", "GEOMETRY=false", "Geometries found in XML although GEOMETRY=false was requested.", "")
+                );
+                return false;
             }
+            return true;
         } catch (Exception e) {
             return false;
         }
@@ -283,7 +308,7 @@ public class GetExtractById extends Check {
             String title = "Invalid image format";
             String message = "The image format is invalid because it is not a PNG at node: " + xpath.getPath(imageNode);
 
-            result.addImageValidationError(new ValidatorMessage(title, message));
+            result.addMessage("Image Validation", new ValidatorMessage(title, message));
             logger.debug("{}", message);
         }
 
@@ -297,7 +322,7 @@ public class GetExtractById extends Check {
             String title = "Invalid image aspect ratio";
             String message = "The image aspect ratio is invalid. Expected: " + expectedAspectRatio + ", Found: " + existingAspectRatio + " at node: " + xpath.getPath(imageNode);
 
-            result.addImageValidationError(new ValidatorMessage(title, message));
+            result.addMessage("Image Validation", new ValidatorMessage(title, message));
             logger.debug("{}", message);
         }
 
@@ -322,7 +347,9 @@ public class GetExtractById extends Check {
 
                         boolean nodeIsValid = validateAndCacheImage(base64, parentNode, h, w, checkedMap);
                         if (!nodeIsValid) {
-                            result.addImageValidationError(new ValidatorMessage("Invalid image", "The image aspect ratio is invalid or it is not a PNG at node: " + xpath.getPath(parentNode)));
+                            result.addMessage("Image Validation",
+                                    new ValidatorMessage("Invalid image", "The image aspect ratio is invalid or it is not a PNG at node: " + xpath.getPath(parentNode))
+                            );
                         }
                         isValid = nodeIsValid && isValid;
                     } catch (Exception e) {
@@ -343,7 +370,9 @@ public class GetExtractById extends Check {
                         String uri = xpath.getString(localisedUri, "ed:Text");
                         boolean nodeIsValid = validateAndCacheRemoteImage(uri, localisedUri, 99, 174, checkedMap);
                         if (!nodeIsValid) {
-                            result.addImageValidationError(new ValidatorMessage("Invalid image", "The image aspect ratio is invalid or it is not a PNG at node: " + xpath.getPath(localisedUri.getParentNode())));
+                            result.addMessage("Image Validation",
+                                    new ValidatorMessage("Invalid image", "The image aspect ratio is invalid or it is not a PNG at node: " + xpath.getPath(localisedUri.getParentNode()))
+                            );
                         }
                         isValid = nodeIsValid && isValid;
                     } catch (Exception e) {
@@ -359,7 +388,9 @@ public class GetExtractById extends Check {
                         String uri = symbolRef.getTextContent();
                         boolean nodeIsValid = validateAndCacheRemoteImage(uri, symbolRef, 3, 6, checkedMap);
                         if (!nodeIsValid) {
-                            result.addImageValidationError(new ValidatorMessage("Invalid image", "The image aspect ratio is invalid or it is not a PNG at node: " + xpath.getPath(symbolRef.getParentNode())));
+                            result.addMessage("Image Validation",
+                                    new ValidatorMessage("Invalid image", "The image aspect ratio is invalid or it is not a PNG at node: " + xpath.getPath(symbolRef.getParentNode()))
+                            );
                         }
                         isValid = nodeIsValid && isValid;
                     } catch (Exception e) {
@@ -386,6 +417,9 @@ public class GetExtractById extends Check {
 
     private boolean validateAndCacheRemoteImage(String uri, Node node, int h, int w, Map<String, Boolean> cache) throws Exception {
         if (StringUtils.isBlank(uri)) {
+            result.addMessage("Image Validation",
+                    new ValidatorMessage("Broken Reference", "Empty URI", "An image reference (WMS/Symbol) has an empty or blank URI.", xpath.getPath(node))
+            );
             return false;
         }
         if (!cache.containsKey(uri)) {
@@ -396,7 +430,11 @@ public class GetExtractById extends Check {
                 }
             } else {
                 cache.put(uri, false);
-                logger.warn("Failed to load image for aspect ratio check: {} (Status {})", uri, response.statusCode());
+                String msg = "Failed to load image for aspect ratio check: " + uri + " (HTTP " + response.statusCode() + ")";
+                result.addMessage("Image Validation",
+                        new ValidatorMessage("Network Error", "Image Load", msg, xpath.getPath(node))
+                );
+                logger.warn(msg);
             }
         }
         return cache.get(uri);
@@ -419,7 +457,11 @@ public class GetExtractById extends Check {
         }
 
         if (getCapabilitiesLanguages.isEmpty()) {
-            logger.error("Language check failed: No languages found in GetCapabilities response");
+            String msg = "Language check failed: No languages found in GetCapabilities response";
+            result.addMessage("Language Validation",
+                    new ValidatorMessage("Capabilities", "Language Sync", msg, "")
+            );
+            logger.error(msg);
             return false;
         }
 
@@ -431,12 +473,24 @@ public class GetExtractById extends Check {
                     .toList();
 
             if (StringUtils.isNotBlank(config.LANG)) {
-                return foundLanguages.contains(config.LANG) && foundLanguages.size() == 1;
+                boolean contains = foundLanguages.contains(config.LANG) && foundLanguages.size() == 1;
+                if (!contains) {
+                    result.addMessage("Language Validation",
+                            new ValidatorMessage("Parameter Logic", "LANG=" + config.LANG, "Requested language '" + config.LANG + "' not found or multiple languages present: " + foundLanguages, "")
+                    );
+                }
+                return contains;
             } else {
                 List<String> missingLanguages = new ArrayList<>(getCapabilitiesLanguages);
                 missingLanguages.removeAll(foundLanguages);
 
-                return missingLanguages.isEmpty();
+                boolean valid = missingLanguages.isEmpty();
+                if (!valid) {
+                    result.addMessage("Language Validation",
+                            new ValidatorMessage("Business Logic", "Multilingualism", "Extract is missing languages defined in GetCapabilities: " + missingLanguages, "")
+                    );
+                }
+                return valid;
             }
         } catch (Exception e) {
             logger.error("XPath error in checkParamLang: {}", e.getMessage());
@@ -451,7 +505,9 @@ public class GetExtractById extends Check {
             NodeList themeWithoutDataNodes = xpath.getNodes(doc, "//ed:ThemeWithoutData");
 
             if (concernedThemeNodes.getLength() == 0 && notConcernedThemeNodes.getLength() == 0 && themeWithoutDataNodes.getLength() == 0) {
-                result.addTopicsValidationError(new ValidatorMessage("No topics available", "There are no entries for <ConcernedTheme>, <NotConcernedTheme>, or <ThemeWithoutData>."));
+                result.addMessage("Topic Validation",
+                        new ValidatorMessage("No topics available", "There are no entries for <ConcernedTheme>, <NotConcernedTheme>, or <ThemeWithoutData>.")
+                );
                 return false;
             }
 
@@ -522,7 +578,9 @@ public class GetExtractById extends Check {
                     if (federalLocalisedText != null && !federalLocalisedText.getText().equals(text)) {
                         titleIsValid = false;
                         String msg = "Theme '" + code + "': Title mismatch for language '" + lang + "'. Expected: '" + federalLocalisedText.getText() + "', Found: '" + text + "'";
-                        result.addTopicsValidationError(new ValidatorMessage("Incorrect theme title", msg));
+                        result.addMessage("Topic Validation",
+                                new ValidatorMessage("Incorrect theme title", msg)
+                        );
                         logger.debug(msg);
                     }
                 } catch (Exception e) {
@@ -557,7 +615,11 @@ public class GetExtractById extends Check {
                 }
             }
             if (getCapabilitiesTopicCodes.isEmpty()) {
-                logger.error("Theme check failed: No topics found in GetCapabilities response");
+                String msg = "Theme check failed: No topics found in GetCapabilities response";
+                result.addMessage("Topic Validation",
+                        new ValidatorMessage("Capabilities", "Topic Sync", msg, "")
+                );
+                logger.error(msg);
                 return false;
             }
 
@@ -566,7 +628,9 @@ public class GetExtractById extends Check {
             for (String extractThemeCode : extractThemeCodes) {
                 if (!getCapabilitiesTopicCodes.contains(extractThemeCode)) {
                     themeNotInGetCapabilities.add(extractThemeCode);
-                    result.addTopicsValidationError(new ValidatorMessage("Theme missing from capabilities", "Extract theme '" + extractThemeCode + "' is not present in GetCapabilities response"));
+                    result.addMessage("Topic Validation",
+                            new ValidatorMessage("Theme missing from capabilities", "Extract theme '" + extractThemeCode + "' is not present in GetCapabilities response")
+                    );
                 }
             }
 
@@ -577,7 +641,9 @@ public class GetExtractById extends Check {
                 for (String themeCode : getCapabilitiesTopicCodes) {
                     if (!extractThemeCodes.contains(themeCode)) {
                         themeNotInExtract.add(themeCode);
-                        result.addTopicsValidationError(new ValidatorMessage("Capabilities theme missing in extract", "Capabilities theme '" + themeCode + "' is not present in extract"));
+                        result.addMessage("Topic Validation",
+                                new ValidatorMessage("Capabilities theme missing in extract", "Capabilities theme '" + themeCode + "' is not present in extract")
+                        );
                     }
                 }
 
@@ -592,13 +658,17 @@ public class GetExtractById extends Check {
                 for (String extractThemeCode : extractThemeCodes) {
                     if (!federalTopicCodes.contains(extractThemeCode)) {
                         themeNotInFederalTopics.add(extractThemeCode);
-                        result.addTopicsValidationError(new ValidatorMessage("Theme missing from federal topics", "Extract theme '" + extractThemeCode + "' is not present in federal topics"));
+                        result.addMessage("Topic Validation",
+                                new ValidatorMessage("Theme missing from federal topics", "Extract theme '" + extractThemeCode + "' is not present in federal topics")
+                        );
                     }
                 }
                 for (String themeCode : federalTopicCodes) {
                     if (!extractThemeCodes.contains(themeCode)) {
                         federalThemeNotInExtract.add(themeCode);
-                        result.addTopicsValidationError(new ValidatorMessage("Federal theme missing in extract", "Federal theme '" + themeCode + "' is not present in extract"));
+                        result.addMessage("Topic Validation",
+                                new ValidatorMessage("Federal theme missing in extract", "Federal theme '" + themeCode + "' is not present in extract")
+                        );
                     }
                 }
 
@@ -611,13 +681,17 @@ public class GetExtractById extends Check {
                 List<String> missingRequestedThemeCodes = new ArrayList<>(requestedThemeCodes);
                 missingRequestedThemeCodes.removeAll(extractThemeCodes);
                 for (String themeCode : missingRequestedThemeCodes) {
-                    result.addTopicsValidationError(new ValidatorMessage("Requested theme missing in extract", "Requested theme '" + themeCode + "' is not present in extract"));
+                    result.addMessage("Topic Validation",
+                            new ValidatorMessage("Requested theme missing in extract", "Requested theme '" + themeCode + "' is not present in extract")
+                    );
                 }
 
                 List<String> additionalExtractThemeCodes = new ArrayList<>(extractThemeCodes);
                 additionalExtractThemeCodes.removeAll(requestedThemeCodes);
                 for (String themeCode : additionalExtractThemeCodes) {
-                    result.addTopicsValidationError(new ValidatorMessage("Unrequested theme in extract", "Theme '" + themeCode + "' is not requested but present in extract"));
+                    result.addMessage("Topic Validation",
+                            new ValidatorMessage("Unrequested theme in extract", "Theme '" + themeCode + "' is not requested but present in extract")
+                    );
                 }
 
                 return missingRequestedThemeCodes.isEmpty() && additionalExtractThemeCodes.isEmpty();
@@ -645,6 +719,10 @@ public class GetExtractById extends Check {
             NodeList legalProvisionsNodes = xpath.getNodes(doc, query);
 
             if (legalProvisionsNodes.getLength() == 0) {
+                String msg = "Topic '" + topicCode + "' has no <LegalProvisions> but federal metadata requires them.";
+                result.addMessage("Topic Validation",
+                        new ValidatorMessage("Federal Logic", "LegalProvisions", msg, "")
+                );
                 return false;
             }
 
@@ -656,7 +734,7 @@ public class GetExtractById extends Check {
                     legalProvisionsNodes,
                     xpath.getPath(restriction)
             );
-            errors.forEach(result::addFederalTopicLawDocumentsError);
+            errors.forEach(msg -> result.addMessage("Topic Validation", msg));
             return errors.isEmpty();
 
         } catch (Exception e) {
@@ -677,7 +755,7 @@ public class GetExtractById extends Check {
                 if (shareEntries == 0) {
                     isValid = false;
                     ValidatorMessage msg = new ValidatorMessage("Missing entries", "There are no entries for <AreaShare>, <LengthShare>, or <NrOfPoints> at " + xpath.getPath(restriction));
-                    result.addRestrictionOnLandownershipValidationError(msg);
+                    result.addMessage("Restriction Validation", msg);
                 }
             }
 
@@ -695,7 +773,7 @@ public class GetExtractById extends Check {
 
             if (glossaryNodes.isEmpty()) {
                 ValidatorMessage msg = new ValidatorMessage("Missing entries", "There are no entries for <Glossary>");
-                result.addGlossaryValidationError(msg);
+                result.addMessage("Glossary Validation", msg);
                 return false;
             }
 
@@ -723,6 +801,8 @@ public class GetExtractById extends Check {
                     }
                 }
                 if (existingGlossar == null) {
+                    result.addMessage("Glossary Validation", new ValidatorMessage("Metadata Mismatch", "Glossary Title", "Glossary entry with title '" + titleText + "' (" + titleLanguage + ") not found in federal metadata.", xpath.getPath(glossaryNode)));
+                    isValid = false;
                     break;
                 } else {
                     glossars.remove(existingGlossar);
@@ -744,11 +824,11 @@ public class GetExtractById extends Check {
                     if (localisationCHV1LocalisedText.isPresent()) {
                         if (!localisationCHV1LocalisedText.get().getText().equals(text)) {
                             isValid = false;
-                            result.addGlossaryValidationError(new ValidatorMessage("Incorrect localized text", "The localized text '" + text + "' should be '" + localisationCHV1LocalisedText.get().getText() + "'"));
+                            result.addMessage("Glossary Validation", new ValidatorMessage("Incorrect localized text", "The localized text '" + text + "' should be '" + localisationCHV1LocalisedText.get().getText() + "'"));
                         }
                     } else {
                         isValid = false;
-                        result.addGlossaryValidationError(new ValidatorMessage("Missing translation", "No localized text found for language '" + language + "'"));
+                        result.addMessage("Glossary Validation", new ValidatorMessage("Missing translation", "No localized text found for language '" + language + "'"));
                     }
                 }
 
@@ -769,11 +849,11 @@ public class GetExtractById extends Check {
                     if (localisationCHV1LocalisedMText.isPresent()) {
                         if (!localisationCHV1LocalisedMText.get().getText().equals(text)) {
                             isValid = false;
-                            result.addGlossaryValidationError(new ValidatorMessage("Incorrect localized text", "The localized text '" + text + "' should be '" + localisationCHV1LocalisedMText.get().getText() + "'"));
+                            result.addMessage("Glossary Validation", new ValidatorMessage("Incorrect localized text", "The localized text '" + text + "' should be '" + localisationCHV1LocalisedMText.get().getText() + "'"));
                         }
                     } else {
                         isValid = false;
-                        result.addGlossaryValidationError(new ValidatorMessage("Missing translation", "No localized text found for language '" + language + "'"));
+                        result.addMessage("Glossary Validation", new ValidatorMessage("Missing translation", "No localized text found for language '" + language + "'"));
                     }
                 }
             }
@@ -791,7 +871,7 @@ public class GetExtractById extends Check {
 
             if (disclaimerNodes.isEmpty()) {
                 ValidatorMessage msg = new ValidatorMessage("Missing entries", "There are no entries for <Disclaimer>");
-                result.addDisclaimerValidationError(msg);
+                result.addMessage("Disclaimer Validation", msg);
                 return false;
             }
 
@@ -839,11 +919,11 @@ public class GetExtractById extends Check {
                     if (localisationCHV1LocalisedText.isPresent()) {
                         if (!localisationCHV1LocalisedText.get().getText().equals(text)) {
                             isValid = false;
-                            result.addGlossaryValidationError(new ValidatorMessage("Incorrect localized text", "The localized text '" + text + "' should be '" + localisationCHV1LocalisedText.get().getText() + "'"));
+                            result.addMessage("Disclaimer Validation", new ValidatorMessage("Incorrect localized text", "The localized text '" + text + "' should be '" + localisationCHV1LocalisedText.get().getText() + "'"));
                         }
                     } else {
                         isValid = false;
-                        result.addGlossaryValidationError(new ValidatorMessage("Missing translation", "No localized text found for language '" + language + "'"));
+                        result.addMessage("Disclaimer Validation", new ValidatorMessage("Missing translation", "No localized text found for language '" + language + "'"));
                     }
                 }
 
@@ -863,11 +943,11 @@ public class GetExtractById extends Check {
                     if (localisationCHV1LocalisedMText.isPresent()) {
                         if (!localisationCHV1LocalisedMText.get().getText().equals(text)) {
                             isValid = false;
-                            result.addGlossaryValidationError(new ValidatorMessage("Incorrect localized text", "The localized text '" + text + "' should be '" + localisationCHV1LocalisedMText.get().getText() + "'"));
+                            result.addMessage("Disclaimer Validation", new ValidatorMessage("Incorrect localized text", "The localized text '" + text + "' should be '" + localisationCHV1LocalisedMText.get().getText() + "'"));
                         }
                     } else {
                         isValid = false;
-                        result.addGlossaryValidationError(new ValidatorMessage("Missing translation", "No localized text found for language '" + language + "'"));
+                        result.addMessage("Disclaimer Validation", new ValidatorMessage("Missing translation", "No localized text found for language '" + language + "'"));
                     }
                 }
             }
@@ -879,6 +959,38 @@ public class GetExtractById extends Check {
         }
     }
 
+    private boolean checkOffice(Document doc) {
+        try {
+            List<String> uids = xpath.getNodesList(doc, "//ed:ResponsibleOffice/ed:UID")
+                    .stream()
+                    .map(org.w3c.dom.Node::getTextContent)
+                    .filter(StringUtils::isNotBlank)
+                    .distinct()
+                    .toList();
+
+            if (uids.isEmpty()) {
+                logger.debug("No UIDs found in extract to validate.");
+                return true;
+            }
+
+            boolean allValid = true;
+            for (String uid : uids) {
+                boolean isValid = ch.swisstopo.oerebchecker.manager.UidManager.validateUID(uid);
+                if (!isValid) {
+                    allValid = false;
+                    String msg = "UID '" + uid + "' is invalid according to BFS Public Services.";
+                    result.addMessage("Office Validation", new ValidatorMessage("Invalid UID", msg));
+                    logger.debug(msg);
+                } else {
+                    logger.trace("UID validated successfully: {}", uid);
+                }
+            }
+            return allValid;
+        } catch (Exception e) {
+            logger.error("XPath error in checkOffice: {}", e.getMessage());
+            return false;
+        }
+    }
 
     @Override
     protected void postProcess() {
@@ -902,10 +1014,8 @@ public class GetExtractById extends Check {
 
             result.GlossaryIsValid = checkGlossary(doc);
             result.DisclaimerIsValid = checkDisclaimer(doc);
-            /*
-            Aktuell noch nicht benötigt, da wir die UID nicht mit einer API abgleichen.
-            result.OfficeIsValid = checkOffice(doc); // 5.10
-            */
+
+            result.OfficeIsValid = checkOffice(doc);
         }
     }
 }

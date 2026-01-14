@@ -1,150 +1,179 @@
-html {
-    box-sizing: border-box;
-}
-
-*,
-*:before,
-*:after {
-    box-sizing: inherit;
-}
-
 body {
-    color: rgba(0, 0, 0, .87);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.4;
+    color: #333;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 10px 2%; /* 2% side margins for full-width feel */
 }
 
-a {
-    background-color: rgba(216, 35, 42, 1);
-
-    &:hover,
-    &:focus {
-        background-color: rgba(216, 35, 42, 1);
-    }
+.report-wrapper {
+    max-width: 100%; /* Changed from 1100px to full width */
+    background: #fff;
+    padding: 15px 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 4px;
 }
 
-.container {
-    margin: 5% 3%;
-
+header {
+    border-bottom: 1px solid #eee;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
 }
 
-.accordion {
-    background-color: #eee;
-    color: #444;
-    cursor: pointer;
-    padding: 18px;
-    width: 100%;
-    text-align: left;
-    border: none;
-    outline: none;
-    transition: 0.4s;
+h1 { color: #2c3e50; margin: 0; font-size: 1.5em; } /* Smaller title */
+
+.meta {
+    color: #7f8c8d;
+    font-size: 0.85em;
+    margin-bottom: 10px;
 }
 
-.active, .accordion:hover {
-    background-color: #ccc;
-}
-
-.panel {
-    padding: 0 18px;
-    background-color: white;
-    display: none;
+/* Canton Section Styling */
+.canton-section {
+    margin-bottom: 10px; /* Tighter spacing between cantons */
+    border: 1px solid #ddd;
+    border-radius: 4px;
     overflow: hidden;
 }
 
-.responsive-table {
-    width: 100%;
-    margin-bottom: 1.5em;
-    border-spacing: 0;
+.canton-section.disabled {
+    opacity: 0.5;
+    border-color: #eee;
+    background-color: #fafafa;
+    cursor: not-allowed;
+    pointer-events: none; /* User cannot click/expand */
+}
 
-    thead {
-        clip: rect(1px 1px 1px 1px); /* IE6, IE7 */
-        padding: 0;
-        border: 0;
-        height: 1px;
-        width: 1px;
-        overflow: hidden;
+.summary-mock {
+    padding: 8px 15px;
+    background: #bdc3c7; /* Gray background for pending items */
+    color: #7f8c8d;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 6px solid #dcdde1;
+}
 
-        th {
-            background-color: rgba(216, 35, 42, 1);
-            border: 1px solid rgba(250, 250, 250, 1);
-            font-weight: normal;
-            text-align: center;
-            color: white;
+.canton-section.disabled .canton-stats {
+    background: rgba(0, 0, 0, 0.05);
+    color: #7f8c8d;
+}
 
-            &:first-of-type {
-                text-align: left;
-            }
-        }
-    }
+.canton-section summary {
+    padding: 8px 15px; /* Thinner header bar */
+    cursor: pointer;
+    background: #2c3e50;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    list-style: none;
+    outline: none;
+}
 
-    tbody,
-    tr,
-    th,
-    td {
-        padding: 0;
-        text-align: left;
-        white-space: normal;
-    }
+.canton-section summary::-webkit-details-marker { display: none; }
 
-    th,
-    td {
-        padding: .5em;
-        vertical-align: middle;
+.canton-section.all-success summary { border-left: 6px solid #28a745; }
+.canton-section.has-failures summary { border-left: 6px solid #dc3545; }
 
-    }
+.canton-title { font-size: 1.1em; }
 
-    caption {
-        margin-bottom: 1em;
-        font-size: 1em;
-        font-weight: bold;
-        text-align: center;
-    }
+.canton-stats {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.85em;
+}
 
-    tfoot {
-        font-size: .8em;
-        font-style: italic;
-    }
+.canton-result-container {
+    padding: 10px 15px; /* Reduced padding inside expanded area */
+    background: #fdfdfd;
+}
 
-    tbody {
-        tr {
-            margin-bottom: 1em;
+/* Individual Check Card Styles */
+.check-card {
+    border-radius: 4px;
+    margin-bottom: 8px;
+    border: 1px solid #eee;
+    background: #fff; /* Ensure white background */
+}
 
-            &:last-of-type {
-                margin-bottom: 0;
-            }
+.check-card.success { border-left: 4px solid #28a745; }
+.check-card.failure { border-left: 4px solid #dc3545; }
 
-            &:nth-of-type(even) {
-                background-color: rgba(0, 0, 0, .12);
-            }
-        }
+.card-header {
+    background: #fcfcfc;
+    padding: 6px 12px; /* Thinner card headers */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-        th[scope='row'] {
-            text-align: left;
-        }
+.status-icon { font-size: 1.1em; }
 
-        td {
-            text-align: right;
+.url {
+    flex-grow: 1;
+    font-size: 0.9em;
+    font-family: 'Consolas', monospace;
+}
 
-            &:last-of-type {
-            }
-        }
+.badge {
+    padding: 2px 6px;
+    font-size: 0.75em;
+}
 
-        td.red {
-            background-color: rgba(255, 0, 0, .12);
-        }
+/* Validation Flags Grid */
+.validation-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* Thinner columns */
+    gap: 5px;
+    padding: 8px 12px;
+}
 
-        td.green {
-            background-color: rgba(0, 255, 0, .12);
-        }
+.flag {
+    font-size: 0.8em;
+}
 
-        td[data-type=currency] {
-            text-align: right;
-        }
+/* Collapsible Error Messages */
+.error-details {
+    margin: 5px 12px 10px 12px;
+    font-size: 0.85em;
+    border: 1px solid #ffcccc; /* Clear red border for errors */
+    border-radius: 4px;
+    background-color: #fff0f0; /* Light red background */
+}
 
-        td[data-title]:before {
-            content: attr(data-title);
-            float: left;
-            font-size: .8em;
-            color: rgba(0, 0, 0, .54);
+.error-details summary {
+    padding: 6px 10px;
+    color: #c0392b;
+    background-color: #feebeb; /* Distinct header color for the error section */
+    cursor: pointer;
+    font-weight: bold;
+    display: list-item;
+    border-bottom: 1px solid transparent;
+}
 
-        }
-    }
+.error-details[open] summary {
+    border-bottom: 1px solid #ffcccc; /* Line between summary and list when open */
+}
+
+.error-details summary:hover {
+    background-color: #fdd;
+}
+
+.error-details ul {
+    margin: 0;
+    padding: 8px 10px 8px 30px;
+    list-style-type: square;
+}
+
+.error-details li {
+    margin-bottom: 3px;
+    color: #721c24;
+}
+
+footer {
+    margin-top: 20px;
+    font-size: 0.75em;
 }

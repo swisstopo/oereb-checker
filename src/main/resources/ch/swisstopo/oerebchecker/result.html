@@ -1,85 +1,102 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <title>Öreb-Checker Ergebnis</title>
+    <title>OeREB Checker Report</title>
     <style>
-        #inlineCssPlaceholder
+        /* CSS will be injected here by ResultManager */
     </style>
 </head>
 <body>
-<div class="container">
-    <button class="accordion">AG</button>
-    <div class="panel" id="ag-result"><div id="ag-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">AI</button>
-    <div class="panel" id="ai-result"><div id="ai-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">AR</button>
-    <div class="panel" id="ar-result"><div id="ar-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">BE</button>
-    <div class="panel" id="be-result"><div id="be-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">BL</button>
-    <div class="panel" id="bl-result"><div id="bl-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">BS</button>
-    <div class="panel" id="bs-result"><div id="bs-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">FR</button>
-    <div class="panel" id="fr-result"><div id="fr-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">GE</button>
-    <div class="panel" id="ge-result"><div id="ge-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">GL</button>
-    <div class="panel" id="gl-result"><div id="gl-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">GR</button>
-    <div class="panel" id="gr-result"><div id="gr-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">JU</button>
-    <div class="panel" id="ju-result"><div id="ju-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">LU</button>
-    <div class="panel" id="lu-result"><div id="lu-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">NE</button>
-    <div class="panel" id="ne-result"><div id="ne-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">NW</button>
-    <div class="panel" id="nw-result"><div id="nw-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">OW</button>
-    <div class="panel" id="ow-result"><div id="ow-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">SG</button>
-    <div class="panel" id="sg-result"><div id="sg-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">SH</button>
-    <div class="panel" id="sh-result"><div id="sh-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">SO</button>
-    <div class="panel" id="so-result"><div id="so-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">SZ</button>
-    <div class="panel" id="sz-result"><div id="sz-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">TG</button>
-    <div class="panel" id="tg-result"><div id="tg-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">TI</button>
-    <div class="panel" id="ti-result"><div id="ti-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">UR</button>
-    <div class="panel" id="ur-result"><div id="ur-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">VD</button>
-    <div class="panel" id="vd-result"><div id="vd-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">VS</button>
-    <div class="panel" id="vs-result"><div id="vs-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">ZG</button>
-    <div class="panel" id="zg-result"><div id="zg-checkResultPlaceholder">Nicht durchgeführt</div></div>
-    <button class="accordion">ZH</button>
-    <div class="panel" id="zh-result"><div id="zh-checkResultPlaceholder">Nicht durchgeführt</div></div>
+<div class="report-wrapper">
+    <header>
+        <h1>OeREB Checker Report</h1>
+    </header>
+
+    <main>
+        <div id="ag-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: AG</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="ai-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: AI</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="ar-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: AR</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="be-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: BE</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="bl-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: BL</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="bs-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: BS</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="fr-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: FR</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="ge-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: GE</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="gl-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: GL</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="gr-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: GR</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="ju-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: JU</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="lu-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: LU</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="ne-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: NE</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="nw-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: NW</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="ow-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: OW</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="sg-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: SG</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="sh-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: SH</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="so-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: SO</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="sz-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: SZ</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="tg-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: TG</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="ti-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: TI</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="ur-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: UR</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="vd-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: VD</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="vs-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: VS</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="zg-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: ZG</span><span class="canton-stats">Pending...</span></div>
+        </div>
+        <div id="zh-checkResultPlaceholder" class="canton-section disabled">
+            <div class="summary-mock"><span class="canton-title">Canton: ZH</span><span class="canton-stats">Pending...</span></div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Swisstopo - OeREB Checker</p>
+    </footer>
 </div>
-
-<script>
-    var acc = document.getElementsByClassName("accordion");
-    var i;
-
-    for (i = 0; i < acc.length; i++) {
-        acc[i].addEventListener("click", function () {
-            this.classList.toggle("active");
-            var panel = this.nextElementSibling;
-            if (panel.style.display === "block") {
-                panel.style.display = "none";
-            } else {
-                panel.style.display = "block";
-            }
-        });
-    }
-</script>
 </body>
 </html>
