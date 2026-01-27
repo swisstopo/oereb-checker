@@ -74,5 +74,14 @@ jobs:
 
       - name: Push Git Tag
         run: |
-          git tag ${{ steps.version.outputs.version_tag }}
-          git push origin ${{ steps.version.outputs.version_tag }}
+          TAG_NAME=${{ steps.version.outputs.version_tag }}
+          # Ensure we have the latest tags from origin
+          git fetch --tags origin
+          # Check if the tag already exists
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists. Skipping tag creation and push."
+          else
+            echo "Creating and pushing tag $TAG_NAME."
+            git tag "$TAG_NAME"
+            git push origin "$TAG_NAME"
+          fi
