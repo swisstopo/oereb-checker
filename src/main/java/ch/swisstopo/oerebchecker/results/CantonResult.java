@@ -6,11 +6,13 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
+import software.amazon.awssdk.utils.StringUtils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class CantonResult {
 
@@ -20,10 +22,6 @@ public class CantonResult {
 
     public Canton getCanton() {
         return canton;
-    }
-
-    public String getExecutionDate() {
-        return executionDate;
     }
 
     public List<CheckResult> getResults() {
@@ -81,9 +79,11 @@ public class CantonResult {
             appendFlag(html, "Office (UID)", result.OfficeIsValid);
             html.append("</div>");
 
-            result.getValidationMessages().forEach((category, messages) -> {
+            for (Map.Entry<String, List<ValidatorMessage>> entry : result.getValidationMessages().entrySet()) {
+                String category = entry.getKey();
+                List<ValidatorMessage> messages = entry.getValue();
                 appendErrorDetails(html, category, messages);
-            });
+            }
 
             if (result.ErrorMessage != null) {
                 appendErrorDetails(html, "System Error", List.of(new ValidatorMessage("Critical", result.ErrorMessage)));
@@ -115,9 +115,9 @@ public class CantonResult {
         for (ValidatorMessage msg : messages) {
             sb
                     .append("<li><strong>")
-                    .append(msg.Rule != null ? msg.Rule : "Error")
+                    .append(StringUtils.isNotBlank(msg.Rule) ? msg.Rule : "Error")
                     .append(":</strong> ")
-                    .append(msg.Message).append(" - ").append(msg.Error)
+                    .append(msg.Message).append(StringUtils.isNotBlank(msg.Error) ? (" - " + msg.Error) : "")
                     .append("</li>");
         }
         sb.append("</ul></details>");

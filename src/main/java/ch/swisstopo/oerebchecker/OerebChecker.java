@@ -163,11 +163,18 @@ public class OerebChecker {
 
     private static Path getOutputDirectoryPath(CantonConfig config) {
 
-        String envPath = System.getenv("OUTPUT_PATH");
+        String envPath = System.getenv("S3ResultOutputPath");
         if (envPath != null) {
+            logger.trace("Found & use S3 Result Output Path: {}", envPath);
+            return Paths.get(envPath);
+        }
+        envPath = System.getenv("OUTPUT_PATH");
+        if (envPath != null) {
+            logger.trace("Found & use OUTPUT_PATH: {}", envPath);
             return Paths.get(envPath).toAbsolutePath();
         }
         if (config.OutputDirectoryPath != null) {
+            logger.trace("Found & use OutputDirectoryPath: {}", config.OutputDirectoryPath);
             return Paths.get(config.OutputDirectoryPath).toAbsolutePath();
         }
 

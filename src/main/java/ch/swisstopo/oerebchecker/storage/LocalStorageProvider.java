@@ -11,6 +11,9 @@ public class LocalStorageProvider implements IStorageProvider {
     @Override
     public byte[] readObject(Path filePath) {
         try {
+            if(!Files.exists(filePath)) {
+                return null;
+            }
             return Files.readAllBytes(filePath);
         } catch (IOException e) {
             return null;

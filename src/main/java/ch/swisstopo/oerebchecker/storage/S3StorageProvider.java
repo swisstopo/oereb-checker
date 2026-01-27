@@ -73,7 +73,7 @@ public class S3StorageProvider implements IStorageProvider {
     public boolean writeObject(Path filePath, InputStream inputStream) {
         String s3Key = normalizeS3Key(filePath);
         try {
-            client.putObject(b -> b.bucket(bucketName).key(s3Key), RequestBody.fromInputStream(inputStream, (long) inputStream.available()));
+            client.putObject(b -> b.bucket(bucketName).key(s3Key), RequestBody.fromInputStream(inputStream, inputStream.available()));
             return true;
         } catch (Exception e) {
             logger.error("S3 Put failed: {}/{}", bucketName, s3Key, e);

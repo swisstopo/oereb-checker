@@ -317,10 +317,25 @@ public class GetExtractById extends Check {
 
         logger.trace("Image dimensions: {}x{}. Calculated aspect ratio: {}", image.getWidth(), image.getHeight(), existingAspectRatio);
 
-        boolean isAspectRatioValid = expectedAspectRatio == existingAspectRatio;
+        boolean isAspectRatioValid = false;
+
+        double percentageDifference = 0.0;
+        if (expectedAspectRatio == 0) {
+            String title = "Invalid image aspect ratio";
+            String message = "The 'expectedAspectRatio' cannot be zero (check requested height/width).";
+
+            result.addMessage("Image Validation", new ValidatorMessage(title, message));
+            logger.debug("{}", message);
+
+        } else {
+            // Calculate the percentage difference relative to the expected value
+            percentageDifference = Math.abs((existingAspectRatio - expectedAspectRatio) / expectedAspectRatio) * 100;
+            isAspectRatioValid = percentageDifference <= maxImageAspectRatioPercentageDifference;
+        }
+
         if (!isAspectRatioValid) {
             String title = "Invalid image aspect ratio";
-            String message = "The image aspect ratio is invalid. Expected: " + expectedAspectRatio + ", Found: " + existingAspectRatio + " at node: " + xpath.getPath(imageNode);
+            String message = "The image aspect ratio is invalid. The percentage difference is " + String.format("%.2f", percentageDifference) + "%. Expected: " + expectedAspectRatio + ", Found: " + existingAspectRatio + " at node: " + xpath.getPath(imageNode);
 
             result.addMessage("Image Validation", new ValidatorMessage(title, message));
             logger.debug("{}", message);
@@ -368,13 +383,7 @@ public class GetExtractById extends Check {
                 for (Node localisedUri : wmsNodes) {
                     try {
                         String uri = xpath.getString(localisedUri, "ed:Text");
-                        boolean nodeIsValid = validateAndCacheRemoteImage(uri, localisedUri, 99, 174, checkedMap);
-                        if (!nodeIsValid) {
-                            result.addMessage("Image Validation",
-                                    new ValidatorMessage("Invalid image", "The image aspect ratio is invalid or it is not a PNG at node: " + xpath.getPath(localisedUri.getParentNode()))
-                            );
-                        }
-                        isValid = nodeIsValid && isValid;
+                        isValid = validateAndCacheRemoteImage(uri, localisedUri, 99, 174, checkedMap) && isValid;
                     } catch (Exception e) {
                         logger.error("Error checking image aspect ratios at node {}: {}", xpath.getPath(localisedUri.getParentNode()), e.getMessage());
                         isValid = false;
@@ -386,13 +395,7 @@ public class GetExtractById extends Check {
                 for (Node symbolRef : symbolRefNodes) {
                     try {
                         String uri = symbolRef.getTextContent();
-                        boolean nodeIsValid = validateAndCacheRemoteImage(uri, symbolRef, 3, 6, checkedMap);
-                        if (!nodeIsValid) {
-                            result.addMessage("Image Validation",
-                                    new ValidatorMessage("Invalid image", "The image aspect ratio is invalid or it is not a PNG at node: " + xpath.getPath(symbolRef.getParentNode()))
-                            );
-                        }
-                        isValid = nodeIsValid && isValid;
+                        isValid = validateAndCacheRemoteImage(uri, symbolRef, 3, 6, checkedMap) && isValid;
                     } catch (Exception e) {
                         logger.error("Error checking image aspect ratios at node {}: {}", xpath.getPath(symbolRef.getParentNode()), e.getMessage());
                         isValid = false;
@@ -466,11 +469,19 @@ public class GetExtractById extends Check {
         }
 
         try {
-            List<String> foundLanguages = xpath.getNodesList(doc, "//*[local-name()='Language']")
+            List<String> foundLanguages = new ArrayList<>(xpath.getNodesList(doc, "//*[local-name()='Language']")
                     .stream()
                     .map(Node::getTextContent)
+                    .map(String::toLowerCase)
                     .distinct()
-                    .toList();
+                    .toList());
+
+            if (foundLanguages.isEmpty()) {
+                result.addMessage("Language Validation",
+                        new ValidatorMessage("Parameter Logic", "LANG=null", "No language found in XML", "")
+                );
+                return false;
+            }
 
             if (StringUtils.isNotBlank(config.LANG)) {
                 boolean contains = foundLanguages.contains(config.LANG) && foundLanguages.size() == 1;
@@ -480,14 +491,15 @@ public class GetExtractById extends Check {
                     );
                 }
                 return contains;
-            } else {
-                List<String> missingLanguages = new ArrayList<>(getCapabilitiesLanguages);
-                missingLanguages.removeAll(foundLanguages);
 
-                boolean valid = missingLanguages.isEmpty();
+            } else {
+                List<String> capabilitiesLanguages = new ArrayList<>(getCapabilitiesLanguages);
+
+                foundLanguages.removeAll(capabilitiesLanguages);
+                boolean valid = foundLanguages.isEmpty();
                 if (!valid) {
                     result.addMessage("Language Validation",
-                            new ValidatorMessage("Business Logic", "Multilingualism", "Extract is missing languages defined in GetCapabilities: " + missingLanguages, "")
+                            new ValidatorMessage("Parameter Logic", "LANG not set", "Included language/s not found in capabilities: " + foundLanguages, "")
                     );
                 }
                 return valid;
@@ -772,12 +784,11 @@ public class GetExtractById extends Check {
             List<Node> glossaryNodes = xpath.getNodesList(doc, "//ed:Glossary");
 
             if (glossaryNodes.isEmpty()) {
-                ValidatorMessage msg = new ValidatorMessage("Missing entries", "There are no entries for <Glossary>");
-                result.addMessage("Glossary Validation", msg);
+                result.addMessage("Glossary Validation", new ValidatorMessage("Missing entries", "There are no entries for <Glossary>"));
                 return false;
             }
 
-            List<V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar> glossars = MetadataManager.getV20Konfiguration().getV20KonfigurationGlossar();
+            List<V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar> glossars = new ArrayList<>(MetadataManager.getV20Konfiguration().getV20KonfigurationGlossar());
 
             boolean isValid = true;
             for (Node glossaryNode : glossaryNodes) {
@@ -800,10 +811,9 @@ public class GetExtractById extends Check {
                         break;
                     }
                 }
+
                 if (existingGlossar == null) {
-                    result.addMessage("Glossary Validation", new ValidatorMessage("Metadata Mismatch", "Glossary Title", "Glossary entry with title '" + titleText + "' (" + titleLanguage + ") not found in federal metadata.", xpath.getPath(glossaryNode)));
-                    isValid = false;
-                    break;
+                    continue;
                 } else {
                     glossars.remove(existingGlossar);
                 }
@@ -824,14 +834,13 @@ public class GetExtractById extends Check {
                     if (localisationCHV1LocalisedText.isPresent()) {
                         if (!localisationCHV1LocalisedText.get().getText().equals(text)) {
                             isValid = false;
-                            result.addMessage("Glossary Validation", new ValidatorMessage("Incorrect localized text", "The localized text '" + text + "' should be '" + localisationCHV1LocalisedText.get().getText() + "'"));
+                            result.addMessage("Glossary Validation", new ValidatorMessage("Incorrect localized text", "The localized text (" + language + ") '" + text + "' should be '" + localisationCHV1LocalisedText.get().getText() + "'"));
                         }
                     } else {
                         isValid = false;
                         result.addMessage("Glossary Validation", new ValidatorMessage("Missing translation", "No localized text found for language '" + language + "'"));
                     }
                 }
-
 
                 Optional<V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar.Inhalt.LocalisationCHV1MultilingualMText.LocalisedText.LocalisationCHV1LocalisedMText> localisationCHV1LocalisedMText;
 
@@ -849,7 +858,7 @@ public class GetExtractById extends Check {
                     if (localisationCHV1LocalisedMText.isPresent()) {
                         if (!localisationCHV1LocalisedMText.get().getText().equals(text)) {
                             isValid = false;
-                            result.addMessage("Glossary Validation", new ValidatorMessage("Incorrect localized text", "The localized text '" + text + "' should be '" + localisationCHV1LocalisedMText.get().getText() + "'"));
+                            result.addMessage("Glossary Validation", new ValidatorMessage("Incorrect localized text", "The localized text (" + language + ") '" + text + "' should be '" + localisationCHV1LocalisedMText.get().getText() + "'"));
                         }
                     } else {
                         isValid = false;
@@ -857,6 +866,20 @@ public class GetExtractById extends Check {
                     }
                 }
             }
+
+            if (!glossars.isEmpty()) {
+                for (V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar glossar : glossars) {
+                    String titleLanguage = glossar.getTitel().getLocalisationCHV1MultilingualText().getLocalisedText().getLocalisationCHV1LocalisedText().getFirst().getLanguage();
+                    String title = glossar.getTitel().getLocalisationCHV1MultilingualText().getLocalisedText().getLocalisationCHV1LocalisedText().getFirst().getText();
+
+                    String msg = "The federal glossary entry with title (" + titleLanguage + ") '" + title + "' is missing in the extract.";
+                    result.addMessage("Glossary Validation",
+                            new ValidatorMessage("Metadata Mismatch", "Federal glossary", msg, null)
+                    );
+                }
+                isValid = false;
+            }
+
             return isValid;
 
         } catch (Exception e) {
