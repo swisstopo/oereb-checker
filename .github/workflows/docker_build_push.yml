@@ -73,16 +73,12 @@ jobs:
             ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:latest
             ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.version.outputs.version }}
 
-      - name: Push Git Tag
-        run: |
-          TAG_NAME=${{ steps.version.outputs.version_tag }}
-          # Ensure we have the latest tags from origin
-          git fetch --tags origin
-          # Check if the tag already exists
-          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            echo "Tag $TAG_NAME already exists. Skipping tag creation and push."
-          else
-            echo "Creating and pushing tag $TAG_NAME."
-            git tag "$TAG_NAME"
-            git push origin "$TAG_NAME"
-          fi
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ steps.version.outputs.version_tag }}
+          name: Release ${{ steps.version.outputs.version_tag }}
+          generate_release_notes: true
+          make_latest: true
+          fail_on_unmatched_files: true
