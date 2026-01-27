@@ -6,31 +6,28 @@ on:
       - main
     paths:
       - 'docker-oereb/**'
-  # pull_request:
+      - 'src/main/**'
+      - pom.xml
   workflow_dispatch:
 
 
 permissions:
   id-token: write
   contents: write
-  # pull-requests: write
-
-# env:
-#   AWS_REGION: ${{ secrets.AWS_REGION }}
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     env:
-      # AWS_REGION: eu-central-1
       AWS_ACCOUNT_ID: "445236799088"
       ECR_REPOSITORY: oereb-runner
-      IMAGE_TAG: latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -42,6 +39,19 @@ jobs:
       - name: Build with Maven
         run: mvn clean package -DskipTests
         working-directory: .
+
+      - name: Determine Version
+        id: version
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          # The prefix to use to identify tags
+          tag_prefix: "v"
+          # A string to determine the format of the version output
+          version_format: "${major}.${minor}.${patch}"
+          # If this is set to true, *every* commit will be treated as a new version.
+          bump_each_commit: false
+          # If true, the body of commits will also be searched for major/minor patterns to determine the version type.
+          search_commit_body: true
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -59,4 +69,10 @@ jobs:
           file: ./docker-oereb/Dockerfile
           push: true
           tags: |
-            ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+            ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:latest
+            ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.version.outputs.version }}
+
+      - name: Push Git Tag
+        run: |
+          git tag ${{ steps.version.outputs.version_tag }}
+          git push origin ${{ steps.version.outputs.version_tag }}
