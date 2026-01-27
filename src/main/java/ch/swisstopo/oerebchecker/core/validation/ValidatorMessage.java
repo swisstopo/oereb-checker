@@ -1,5 +1,7 @@
 package ch.swisstopo.oerebchecker.core.validation;
 
+import software.amazon.awssdk.utils.StringUtils;
+
 public class ValidatorMessage {
 
     public String Flavour = null;
@@ -23,9 +25,28 @@ public class ValidatorMessage {
     public String toString() {
         String result = "";
 
-        if (Rule != null) result += Rule + " - ";
-        if (Flavour != null) result += Flavour + " - ";
+        if (StringUtils.isNotBlank(Rule)) {
+            result += Rule;
+        }
+        if (StringUtils.isNotBlank(Flavour)) {
+            if (StringUtils.isNotBlank(result)) {
+                result += " - ";
+            }
+            result += Flavour;
+        }
+        if (StringUtils.isNotBlank(Message)) {
+            if (StringUtils.isNotBlank(result)) {
+                result += " - ";
+            }
+            result += Message;
+        }
+        if (StringUtils.isNotBlank(Error)) {
+            if (StringUtils.isNotBlank(result)) {
+                result += " - ";
+            }
+            result += Error;
+        }
 
-        return (result + Message + " - " + Error).trim();
+        return result.trim();
     }
 }

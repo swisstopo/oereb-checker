@@ -30,6 +30,20 @@ public abstract class Check implements ICheck {
     protected static final ReentrantLock capabilitiesLock = new ReentrantLock();
     protected static final CountDownLatch capabilitiesLatch = new CountDownLatch(1);
 
+    protected static final double maxImageAspectRatioPercentageDifference;
+
+    static {
+        String envVal = System.getenv("MaxImageAspectRatioPercentageDifference");
+        double defaultValue = 10.0; // Fallback value
+        double value;
+        try {
+            value = StringUtils.isNotBlank(envVal) ? Double.parseDouble(envVal) : defaultValue;
+        } catch (NumberFormatException e) {
+            value = defaultValue;
+        }
+        maxImageAspectRatioPercentageDifference = value;
+    }
+
     protected XPathHelper xpath = new XPathHelper();
 
     protected static boolean capabilitiesSyncComplete = false;
@@ -153,12 +167,14 @@ public abstract class Check implements ICheck {
         if (headers.containsKey("Content-Type")) {
             result.ContentType = headers.get("Content-Type").getFirst();
             if (StringUtils.isNotBlank(result.ContentType)) {
+
                 if (result.StatusCode == ResponseStatusCode.SEE_OTHER) {
-                    // result.ContentTypeCorrect = result.ContentType.startsWith("text/html");
                     result.ContentTypeCorrect = null;
+                    logger.trace("Content-Type check is skipped to be not to strict for redirect response");
 
                 } else if (provoke500 && result.StatusCode == ResponseStatusCode.INTERNAL_SERVER_ERROR) {
                     result.ContentTypeCorrect = null;
+                    logger.trace("Content-Type check is skipped to be not to strict for 'provoke500' response");
 
                 } else {
                     switch (responseFormat) {

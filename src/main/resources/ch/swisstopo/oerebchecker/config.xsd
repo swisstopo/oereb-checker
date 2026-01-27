@@ -1,86 +1,128 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+<xs:schema xmlns="https://www.w3schools.com/"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema"
            elementFormDefault="qualified"
-           targetNamespace="https://www.w3schools.com/"
-           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xmlns="https://www.w3schools.com/">
-    <xs:element name="Config">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element minOccurs="0" ref="Canton" />
-                <xs:element ref="BasicUrl"/>
-                <xs:element ref="OutputDirectoryPath"/>
-                <xs:element maxOccurs="unbounded" ref="GetVersions"/>
-                <xs:element maxOccurs="unbounded" ref="GetCapabilities"/>
-                <xs:element maxOccurs="unbounded" ref="GetEGRID"/>
-                <xs:element maxOccurs="unbounded" ref="GetExtractById"/>
-            </xs:sequence>
-            <xs:attribute ref="xsi:schemaLocation" use="required"/>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="Canton" type="xs:string"/>
-    <xs:element name="BasicUrl" type="xs:anyURI"/>
-    <xs:element name="OutputDirectoryPath" type="xs:anyURI"/>
-    <xs:element name="GetCapabilities">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element ref="FORMAT"/>
-                <xs:element ref="ExpectedStatusCode"/>
-            </xs:sequence>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="GetEGRID">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element ref="FORMAT"/>
-                <xs:choice minOccurs="0">
-                    <xs:element ref="EN"/>
-                    <xs:element ref="GNSS"/>
-                </xs:choice>
-                <xs:choice minOccurs="0">
-                    <xs:element ref="IDENTDN"/>
-                    <xs:sequence>
-                        <xs:element ref="POSTALCODE"/>
-                        <xs:element ref="LOCALISATION"/>
-                    </xs:sequence>
-                </xs:choice>
-                <xs:element minOccurs="0" ref="NUMBER"/>
-                <xs:element ref="ExpectedStatusCode"/>
-            </xs:sequence>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="EN" type="xs:string"/>
-    <xs:element name="GNSS" type="xs:string"/>
-    <xs:element name="POSTALCODE" type="xs:integer"/>
-    <xs:element name="LOCALISATION" type="xs:NCName"/>
-    <xs:element name="GetExtractById">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element ref="FORMAT"/>
-                <xs:choice>
-                    <xs:element ref="EGRID"/>
-                    <xs:element maxOccurs="unbounded" ref="EGRIDS"/>
-                    <xs:sequence>
-                        <xs:element ref="IDENTDN"/>
-                        <xs:element ref="NUMBER"/>
-                    </xs:sequence>
-                </xs:choice>
-                <xs:element minOccurs="0" ref="ExpectedStatusCode"/>
-            </xs:sequence>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="EGRID" type="xs:NCName"/>
-    <xs:element name="EGRIDS" type="xs:NCName"/>
-    <xs:element name="GetVersions">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element ref="FORMAT"/>
-                <xs:element ref="ExpectedStatusCode"/>
-            </xs:sequence>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="FORMAT" type="xs:NCName"/>
-    <xs:element name="ExpectedStatusCode" type="xs:integer"/>
-    <xs:element name="IDENTDN" type="xs:NCName"/>
-    <xs:element name="NUMBER" type="xs:integer"/>
+           targetNamespace="https://www.w3schools.com/">
+
+    <!-- Root Element -->
+    <xs:element name="Config" type="CantonConfig"/>
+
+    <!-- Main Configuration Type -->
+    <xs:complexType name="CantonConfig">
+        <xs:sequence>
+            <!-- Proxy Settings -->
+            <xs:element name="ProxyHostname" type="xs:string" minOccurs="0"/>
+            <xs:element name="ProxyPort" type="xs:int" minOccurs="0" nillable="true"/>
+            <xs:element name="ProxyUser" type="xs:string" minOccurs="0"/>
+            <xs:element name="ProxyPassword" type="xs:string" minOccurs="0"/>
+
+            <!-- General Settings -->
+            <xs:element name="Canton" type="CantonEnum"/>
+            <xs:element name="BasicUrl" type="xs:anyURI"/>
+            <xs:element name="Threads" type="xs:int" minOccurs="0" nillable="true"/>
+            <xs:element name="OutputDirectoryPath" type="xs:string" minOccurs="0"/>
+
+            <!-- Check Lists -->
+            <xs:element name="GetVersions" type="GetVersionsConfig" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="GetEGRID" type="GetEGRIDConfig" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="GetCapabilities" type="GetCapabilitiesConfig" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="GetExtractById" type="GetExtractByIdConfig" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- Base Configuration for all Checks -->
+    <xs:complexType name="CheckConfig" abstract="true">
+        <xs:sequence>
+            <xs:element name="FORMAT" type="xs:string"/>
+            <xs:element name="Provoke500" type="xs:boolean" minOccurs="0"/>
+            <xs:element name="ExpectedStatusCode" type="xs:int" minOccurs="0" nillable="true"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- GetVersions -->
+    <xs:complexType name="GetVersionsConfig">
+        <xs:complexContent>
+            <xs:extension base="CheckConfig"/>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!-- GetCapabilities -->
+    <xs:complexType name="GetCapabilitiesConfig">
+        <xs:complexContent>
+            <xs:extension base="CheckConfig"/>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!-- Corrected GetEGRIDConfig -->
+    <xs:complexType name="GetEGRIDConfig">
+        <xs:complexContent>
+            <xs:extension base="CheckConfig">
+                <xs:sequence>
+                    <xs:element name="GEOMETRY" type="xs:boolean" minOccurs="0"/>
+                    <xs:element name="EN" type="xs:string" minOccurs="0" nillable="true"/>
+                    <xs:element name="IDENTDN" type="xs:string" minOccurs="0" nillable="true"/>
+                    <xs:element name="NUMBER" type="xs:string" minOccurs="0" nillable="true"/>
+                    <xs:element name="POSTALCODE" type="xs:int" minOccurs="0" nillable="true"/>
+                    <xs:element name="LOCALISATION" type="xs:string" minOccurs="0" nillable="true"/>
+                    <xs:element name="GNSS" type="xs:string" minOccurs="0" nillable="true"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!-- Corrected GetExtractByIdConfig -->
+    <xs:complexType name="GetExtractByIdConfig">
+        <xs:complexContent>
+            <xs:extension base="CheckConfig">
+                <xs:sequence>
+                    <!-- Parameter Logic -->
+                    <xs:element name="GEOMETRY" type="xs:boolean" minOccurs="0" nillable="true"/>
+                    <xs:element name="SIGNED" type="xs:boolean" minOccurs="0"/>
+                    <xs:element name="LANG" type="xs:string" minOccurs="0"/>
+                    <xs:element name="TOPICS" type="xs:string" minOccurs="0"/>
+                    <xs:element name="WITHIMAGES" type="xs:boolean" minOccurs="0" nillable="true"/>
+
+                    <!-- Identification Params -->
+                    <xs:element name="EGRID" type="xs:string" minOccurs="0" nillable="true"/>
+                    <xs:element name="EGRIDS" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+                    <xs:element name="IDENTDN" type="xs:string" minOccurs="0" nillable="true"/>
+                    <xs:element name="NUMBER" type="xs:string" minOccurs="0" nillable="true"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!-- Canton Enumeration -->
+    <xs:simpleType name="CantonEnum">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="AG"/>
+            <xs:enumeration value="AR"/>
+            <xs:enumeration value="AI"/>
+            <xs:enumeration value="BE"/>
+            <xs:enumeration value="BL"/>
+            <xs:enumeration value="BS"/>
+            <xs:enumeration value="FR"/>
+            <xs:enumeration value="GE"/>
+            <xs:enumeration value="GL"/>
+            <xs:enumeration value="GR"/>
+            <xs:enumeration value="JU"/>
+            <xs:enumeration value="LU"/>
+            <xs:enumeration value="NE"/>
+            <xs:enumeration value="NW"/>
+            <xs:enumeration value="OW"/>
+            <xs:enumeration value="SH"/>
+            <xs:enumeration value="SZ"/>
+            <xs:enumeration value="SO"/>
+            <xs:enumeration value="SG"/>
+            <xs:enumeration value="TI"/>
+            <xs:enumeration value="TG"/>
+            <xs:enumeration value="UR"/>
+            <xs:enumeration value="VD"/>
+            <xs:enumeration value="VS"/>
+            <xs:enumeration value="ZG"/>
+            <xs:enumeration value="ZH"/>
+            <xs:enumeration value="unknown"/>
+        </xs:restriction>
+    </xs:simpleType>
+
 </xs:schema>

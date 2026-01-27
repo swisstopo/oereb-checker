@@ -61,7 +61,7 @@ public class GetCapabilities extends Check {
 
                 NodeList langNodes = xpath.getNodes(doc, "//e:language");
                 for (int i = 0; i < langNodes.getLength(); i++) {
-                    String lang = langNodes.item(i).getTextContent();
+                    String lang = langNodes.item(i).getTextContent().toLowerCase();
                     logger.trace("Found Language in Capabilities: {}", lang);
                     getCapabilitiesLanguages.add(lang);
                 }

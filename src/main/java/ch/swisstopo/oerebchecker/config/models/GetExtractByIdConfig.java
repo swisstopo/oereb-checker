@@ -40,7 +40,7 @@ public class GetExtractByIdConfig extends CheckConfig {
         possibleConfigs.add(getCopy());
 
         ResponseFormat responseFormat = ResponseFormat.valueOf(FORMAT);
-        if (responseFormat == ResponseFormat.xml) {
+        if (!Provoke500 && responseFormat == ResponseFormat.xml) {
             GetExtractByIdConfig copy;
             if (GEOMETRY == null) {
                 copy = getCopy();
