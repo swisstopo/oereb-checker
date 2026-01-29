@@ -17,7 +17,8 @@ public class LambdaHandler implements RequestHandler<Map<String, Object>, String
     public String handleRequest(Map<String, Object> input, Context context) {
         LambdaLogger log = context.getLogger();
 
-        // Log startup diagnostics
+        // Log startup diagnostics and environment variables to help debug configuration
+        // issues in the Lambda environment (where local FS access is restricted).
         log.log("=== Lambda Invocation Started ===");
         log.log("Request ID: " + context.getAwsRequestId());
         log.log("Function Name: " + context.getFunctionName());

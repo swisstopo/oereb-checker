@@ -11,7 +11,7 @@ public class LocalStorageProvider implements IStorageProvider {
     @Override
     public byte[] readObject(Path filePath) {
         try {
-            if(!Files.exists(filePath)) {
+            if (!Files.exists(filePath)) {
                 return null;
             }
             return Files.readAllBytes(filePath);
@@ -23,7 +23,11 @@ public class LocalStorageProvider implements IStorageProvider {
     @Override
     public boolean writeObject(Path filePath, InputStream inputStream) {
         try {
-            Files.createDirectories(filePath.getParent());
+            // Ensure parent directories exist. Null check is crucial when writing directly
+            // to a root path (e.g., Paths.get("result.html")).
+            if (filePath.getParent() != null) {
+                Files.createDirectories(filePath.getParent());
+            }
             Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
             return true;
         } catch (IOException e) {

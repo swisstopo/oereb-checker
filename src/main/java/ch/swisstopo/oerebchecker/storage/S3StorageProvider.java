@@ -41,7 +41,8 @@ public class S3StorageProvider implements IStorageProvider {
             String secretKey = System.getenv("S3SecretKey");
 
             if (accessKey != null && secretKey != null) {
-                builder.credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)));
+                builder.credentialsProvider(
+                        StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)));
                 logger.info("Using static credentials for S3.");
             } else {
                 builder.credentialsProvider(DefaultCredentialsProvider.builder().build());
@@ -72,13 +73,30 @@ public class S3StorageProvider implements IStorageProvider {
     @Override
     public boolean writeObject(Path filePath, InputStream inputStream) {
         String s3Key = normalizeS3Key(filePath);
+        // Explicitly set Content-Type so CloudFront/Browsers render the file instead of
+        // downloading.
+        final String contentType = determineContentType(filePath);
+
         try {
-            client.putObject(b -> b.bucket(bucketName).key(s3Key), RequestBody.fromInputStream(inputStream, inputStream.available()));
+            client.putObject(b -> b.bucket(bucketName).key(s3Key).contentType(contentType),
+                    RequestBody.fromInputStream(inputStream, inputStream.available()));
             return true;
         } catch (Exception e) {
             logger.error("S3 Put failed: {}/{}", bucketName, s3Key, e);
             return false;
         }
+    }
+
+    private String determineContentType(Path filePath) {
+        String fileName = filePath.getFileName().toString().toLowerCase();
+        if (fileName.endsWith(".html")) {
+            return "text/html";
+        } else if (fileName.endsWith(".json")) {
+            return "application/json";
+        } else if (fileName.endsWith(".css")) {
+            return "text/css";
+        }
+        return "application/octet-stream";
     }
 
     @Override

@@ -42,13 +42,17 @@ public class ConfigManager {
         if (configFilePathString == null || configFilePathString.isBlank()) {
             logger.error("No value for environment variable: '{}'", s3ConfigEnvKey);
         } else {
-            configFilePath = Paths.get(configFilePathString);
-            byte[] cantonConfigData = storageProvider.readObject(configFilePath);
-            CantonConfig cantonConfig = getCantonConfig(configFilePath, cantonConfigData);
-            if (cantonConfig != null) {
-                Canton canton = getCantonFromConfigOrPath(cantonConfig, configFilePath);
-                cantonConfigs.put(canton, cantonConfig);
-            }
+            loadConfigFromS3(storageProvider, configFilePathString);
+        }
+    }
+
+    public static void loadConfigFromS3(S3StorageProvider storageProvider, String key) {
+        configFilePath = Paths.get(key);
+        byte[] cantonConfigData = storageProvider.readObject(configFilePath);
+        CantonConfig cantonConfig = getCantonConfig(configFilePath, cantonConfigData);
+        if (cantonConfig != null) {
+            Canton canton = getCantonFromConfigOrPath(cantonConfig, configFilePath);
+            cantonConfigs.put(canton, cantonConfig);
         }
     }
 
@@ -71,7 +75,8 @@ public class ConfigManager {
                         subDirectoryPaths.removeFirst();
 
                         for (Path subDirectoryPath : subDirectoryPaths) {
-                            try (Stream<Path> fileStream = Files.walk(subDirectoryPath, 1).filter(Files::isRegularFile)) {
+                            try (Stream<Path> fileStream = Files.walk(subDirectoryPath, 1)
+                                    .filter(Files::isRegularFile)) {
                                 List<Path> filePaths = fileStream.toList();
                                 if (!filePaths.isEmpty()) {
                                     byte[] cantonConfigData = Files.readAllBytes(filePaths.getFirst());
@@ -114,7 +119,6 @@ public class ConfigManager {
                 String format = cli.getFormat() != null ? cli.getFormat() : "xml";
                 Integer expectedStatus = cli.getExpectedStatusCode();
                 boolean provoke500 = cli.getProvoke500();
-
 
                 if ("GetVersions".equalsIgnoreCase(type)) {
                     var c = new GetVersionsConfig();
@@ -196,7 +200,8 @@ public class ConfigManager {
             try {
                 return Canton.valueOf(cantonConfig.Canton.toUpperCase());
             } catch (IllegalArgumentException e) {
-                logger.error("Invalid canton name '{}' in config file from path: '{}'", cantonConfig.Canton, configFilePath);
+                logger.error("Invalid canton name '{}' in config file from path: '{}'", cantonConfig.Canton,
+                        configFilePath);
             }
         }
 
