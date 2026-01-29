@@ -2,7 +2,7 @@
 <!--
 Version    | Who   | Modification
 =======================================================================================
-2022-09-01 | KOGIS | File name adapted (without date at the end)
+2025-12-09 | V+D   | New URLs for the legal basis 
 -->
 <TRANSFER xmlns="http://www.interlis.ch/INTERLIS2.3" xmlns:ili2c="http://www.interlis.ch/ili2c" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <HEADERSECTION SENDER="swisstopo, Geodesy and Federal Directorate of Cadastral Surveying" VERSION="2.3">
@@ -10,13 +10,13 @@ Version    | Who   | Modification
       <MODEL NAME="OeREBKRM_V2_0" VERSION="2021-04-14" URI="https://models.geo.admin.ch/V_D/OeREB/"/>
     </MODELS>
     <!-- Stand der XML-Datei, Etat du fichier XML, Stato del XML-File -->
-    <COMMENT>"2022-09-01"</COMMENT>
+    <COMMENT>"2025-12-09"</COMMENT>
   </HEADERSECTION>
   <DATASECTION>
     <OeREBKRM_V2_0.Dokumente BID="ch.admin.v_d.oerebkrmvs_vorschriften">
-      <!-- gesetzliche Grundlagen gemäss GeoIV Anhang 1 http://www.admin.ch/ch/d/sr/510_620/app1.html und Weisung "ÖREB-Kataster – Rechtsvorschriften und Hinweise auf die rechtlichen Grundlagen" -->
-      <!-- bases légales selon l'annexe 1 de l'OGéo  http://www.admin.ch/ch/f/sr/510_620/app1.html et Instruction «Cadastre RDPPF – Dispositions juridiques et renvois vers les bases légales» -->
-      <!-- base legali segondo l'allegato 1 dell'OGI http://www.admin.ch/ch/i/sr/510_620/app1.html e Istruzione «Catasto RDPP – Prescrizioni legali e indicazioni concernenti le basi legali» -->
+      <!-- gesetzliche Grundlagen gemäss GeoIV Anhang 1 https://www.fedlex.admin.ch/eli/cc/2008/389/de#annex_1 und Weisung "ÖREB-Kataster – Rechtsvorschriften und Hinweise auf die rechtlichen Grundlagen" -->
+      <!-- bases légales selon l'annexe 1 de l'OGéo  https://www.fedlex.admin.ch/eli/cc/2008/389/fr#annex_1 et Instruction «Cadastre RDPPF – Dispositions juridiques et renvois vers les bases légales» -->
+      <!-- base legali segondo l'allegato 1 dell'OGI https://www.fedlex.admin.ch/eli/cc/2008/389/it#annex_1 e Istruzione «Catasto RDPP – Prescrizioni legali e indicazioni concernenti le basi legali» -->
 
       <!-- ID 73 Nutzungsplanung (kantonal/kommunal) SR 700 Art. 14, 26 -->
       <!-- ID 76 Planungszonen SR 700 Art. 27 -->
@@ -109,15 +109,15 @@ Version    | Who   | Modification
             <LocalisedText>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>de</Language>
-                <Text>https://www.admin.ch/ch/d/sr/c700.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1979/1573_1573_1573/de</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>fr</Language>
-                <Text>https://www.admin.ch/ch/f/sr/c700.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1979/1573_1573_1573/fr</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>it</Language>
-                <Text>https://www.admin.ch/ch/i/sr/c700.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1979/1573_1573_1573/it</Text>
               </OeREBKRM_V2_0.LocalisedUri>
             </LocalisedText>
           </OeREBKRM_V2_0.MultilingualUri>
@@ -218,15 +218,15 @@ Version    | Who   | Modification
             <LocalisedText>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>de</Language>
-                <Text>https://www.admin.ch/ch/d/sr/c725_11.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1960/525_569_555/de</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>fr</Language>
-                <Text>https://www.admin.ch/ch/f/sr/c725_11.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1960/525_569_555/fr</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>it</Language>
-                <Text>https://www.admin.ch/ch/i/sr/c725_11.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1960/525_569_555/it</Text>
               </OeREBKRM_V2_0.LocalisedUri>
             </LocalisedText>
           </OeREBKRM_V2_0.MultilingualUri>
@@ -321,15 +321,15 @@ Version    | Who   | Modification
             <LocalisedText>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>de</Language>
-                <Text>https://www.admin.ch/ch/d/sr/c725_111.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/2007/796/de</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>fr</Language>
-                <Text>https://www.admin.ch/ch/f/sr/c725_111.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/2007/796/fr</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>it</Language>
-                <Text>https://www.admin.ch/ch/i/sr/c725_111.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/2007/796/it</Text>
               </OeREBKRM_V2_0.LocalisedUri>
             </LocalisedText>
           </OeREBKRM_V2_0.MultilingualUri>
@@ -430,15 +430,15 @@ Version    | Who   | Modification
             <LocalisedText>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>de</Language>
-                <Text>https://www.admin.ch/ch/d/sr/c742_101.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1958/335_341_347/de</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>fr</Language>
-                <Text>https://www.admin.ch/ch/f/sr/c742_101.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1958/335_341_347/fr</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>it</Language>
-                <Text>https://www.admin.ch/ch/i/sr/c742_101.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1958/335_341_347/it</Text>
               </OeREBKRM_V2_0.LocalisedUri>
             </LocalisedText>
           </OeREBKRM_V2_0.MultilingualUri>
@@ -542,15 +542,15 @@ Version    | Who   | Modification
             <LocalisedText>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>de</Language>
-                <Text>https://www.admin.ch/ch/d/sr/c748_0.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1950/471_491_479/de</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>fr</Language>
-                <Text>https://www.admin.ch/ch/f/sr/c748_0.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1950/471_491_479/fr</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>it</Language>
-                <Text>https://www.admin.ch/ch/i/sr/c748_0.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1950/471_491_479/it</Text>
               </OeREBKRM_V2_0.LocalisedUri>
             </LocalisedText>
           </OeREBKRM_V2_0.MultilingualUri>
@@ -645,15 +645,15 @@ Version    | Who   | Modification
             <LocalisedText>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>de</Language>
-                <Text>https://www.admin.ch/ch/d/sr/c748_131_1.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1994/3050_3050_3050/de</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>fr</Language>
-                <Text>https://www.admin.ch/ch/f/sr/c748_131_1.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1994/3050_3050_3050/fr</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>it</Language>
-                <Text>https://www.admin.ch/ch/i/sr/c748_131_1.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1994/3050_3050_3050/it</Text>
               </OeREBKRM_V2_0.LocalisedUri>
             </LocalisedText>
           </OeREBKRM_V2_0.MultilingualUri>
@@ -760,15 +760,15 @@ Version    | Who   | Modification
             <LocalisedText>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>de</Language>
-                <Text>https://www.admin.ch/ch/d/sr/c814_01.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1984/1122_1122_1122/de</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>fr</Language>
-                <Text>https://www.admin.ch/ch/f/sr/c814_01.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1984/1122_1122_1122/fr</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>it</Language>
-                <Text>https://www.admin.ch/ch/i/sr/c814_01.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1984/1122_1122_1122/it</Text>
               </OeREBKRM_V2_0.LocalisedUri>
             </LocalisedText>
           </OeREBKRM_V2_0.MultilingualUri>
@@ -863,15 +863,15 @@ Version    | Who   | Modification
             <LocalisedText>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>de</Language>
-                <Text>https://www.admin.ch/ch/d/sr/c814_680.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1998/2261_2261_2261/de</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>fr</Language>
-                <Text>https://www.admin.ch/ch/f/sr/c814_680.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1998/2261_2261_2261/fr</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>it</Language>
-                <Text>https://www.admin.ch/ch/i/sr/c814_680.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1998/2261_2261_2261/it</Text>
               </OeREBKRM_V2_0.LocalisedUri>
             </LocalisedText>
           </OeREBKRM_V2_0.MultilingualUri>
@@ -975,15 +975,15 @@ Version    | Who   | Modification
             <LocalisedText>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>de</Language>
-                <Text>https://www.admin.ch/ch/d/sr/c814_20.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1992/1860_1860_1860/de</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>fr</Language>
-                <Text>https://www.admin.ch/ch/f/sr/c814_20.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1992/1860_1860_1860/fr</Text>
               </OeREBKRM_V2_0.LocalisedUri>
                <OeREBKRM_V2_0.LocalisedUri>
                 <Language>it</Language>
-                <Text>https://www.admin.ch/ch/i/sr/c814_20.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1992/1860_1860_1860/it</Text>
               </OeREBKRM_V2_0.LocalisedUri>
             </LocalisedText>
           </OeREBKRM_V2_0.MultilingualUri>
@@ -1078,15 +1078,15 @@ Version    | Who   | Modification
             <LocalisedText>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>de</Language>
-                <Text>https://www.admin.ch/ch/d/sr/c814_201.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1998/2863_2863_2863/de</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>fr</Language>
-                <Text>https://www.admin.ch/ch/f/sr/c814_201.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1998/2863_2863_2863/fr</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>it</Language>
-                <Text>https://www.admin.ch/ch/i/sr/c814_201.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1998/2863_2863_2863/it</Text>
               </OeREBKRM_V2_0.LocalisedUri>
             </LocalisedText>
           </OeREBKRM_V2_0.MultilingualUri>
@@ -1184,15 +1184,15 @@ Version    | Who   | Modification
             <LocalisedText>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>de</Language>
-                <Text>https://www.admin.ch/ch/d/sr/c814_41.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1987/338_338_338/de</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>fr</Language>
-                <Text>https://www.admin.ch/ch/f/sr/c814_41.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1987/338_338_338/fr</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>it</Language>
-                <Text>https://www.admin.ch/ch/i/sr/c814_41.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1987/338_338_338/it</Text>
               </OeREBKRM_V2_0.LocalisedUri>
             </LocalisedText>
           </OeREBKRM_V2_0.MultilingualUri>
@@ -1296,15 +1296,15 @@ Version    | Who   | Modification
             <LocalisedText>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>de</Language>
-                <Text>https://www.admin.ch/ch/d/sr/c921_0.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1992/2521_2521_2521/de</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>fr</Language>
-                <Text>https://www.admin.ch/ch/f/sr/c921_0.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1992/2521_2521_2521/fr</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>it</Language>
-                <Text>https://www.admin.ch/ch/i/sr/c921_0.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1992/2521_2521_2521/it</Text>
               </OeREBKRM_V2_0.LocalisedUri>
             </LocalisedText>
           </OeREBKRM_V2_0.MultilingualUri>
@@ -1399,15 +1399,15 @@ Version    | Who   | Modification
             <LocalisedText>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>de</Language>
-                <Text>https://www.admin.ch/ch/d/sr/c921_01.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1992/2538_2538_2538/de</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>fr</Language>
-                <Text>https://www.admin.ch/ch/f/sr/c921_01.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1992/2538_2538_2538/fr</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>it</Language>
-                <Text>https://www.admin.ch/ch/i/sr/c921_01.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/1992/2538_2538_2538/it</Text>
               </OeREBKRM_V2_0.LocalisedUri>
             </LocalisedText>
           </OeREBKRM_V2_0.MultilingualUri>
@@ -1508,15 +1508,15 @@ Version    | Who   | Modification
             <LocalisedText>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>de</Language>
-                <Text>https://www.admin.ch/ch/d/sr/c734_0.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/19/259_252_257/de</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>fr</Language>
-                <Text>https://www.admin.ch/ch/f/sr/c734_0.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/19/259_252_257/fr</Text>
               </OeREBKRM_V2_0.LocalisedUri>
               <OeREBKRM_V2_0.LocalisedUri>
                 <Language>it</Language>
-                <Text>https://www.admin.ch/ch/i/sr/c734_0.html</Text>
+                <Text>https://www.fedlex.admin.ch/eli/cc/19/259_252_257/it</Text>
               </OeREBKRM_V2_0.LocalisedUri>
             </LocalisedText>
           </OeREBKRM_V2_0.MultilingualUri>

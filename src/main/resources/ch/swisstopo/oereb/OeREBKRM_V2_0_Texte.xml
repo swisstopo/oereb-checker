@@ -4,12 +4,11 @@ Version    | Who   | Modification
 =======================================================================================
 2021-07-14 | V+D   | Several translations of the themes in the glossary adapted
 2021-09-15 | V+D   | 'Modificazione' replaced by 'Modifica' and language code for 'SelbstRecht.Quellenrecht' adapted
-2021-10-21 | KOGIS | BID adapted (uniqueness)
-2022-03-01 | V+D   | Cleanup of various typos in French and Italian
+2021-03-01 | V+D   | Cleanup of various typos in French and Italian
 2022-05-17 | V+D   | Italien text of 'E-GRID' adapted
 2022-06-07 | V+D   | German text of 'Reserved zones for power lines with a nominal voltage of 220 kV or higher' adapted
-2022-09-01 | V+D   | New term 'Änderungen' introduced in Gloassar
-           | KOGIS | File name adapted (without date at the end)
+2022-09-01 | V+D   | New term 'Modifications' introduced in Gloassar
+2025-12-09 | V+D   | Clarification in the description of the topic ‘water space’
 -->
 <TRANSFER xmlns="http://www.interlis.ch/INTERLIS2.3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <HEADERSECTION SENDER="swisstopo, Geodesy and Federal Directorate of Cadastral Surveying" VERSION="2.3">
@@ -20,7 +19,7 @@ Version    | Who   | Modification
       <MODEL NAME="OeREBKRMkvs_V2_0" VERSION="2021-04-14" URI="https://models.geo.admin.ch/V_D/OeREB/"/>
     </MODELS>
     <!-- Stand der XML-Datei, Etat du fichier XML, Stato del XML-File -->
-    <COMMENT>"2022-09-01"</COMMENT>
+    <COMMENT>"2025-12-09"</COMMENT>
   </HEADERSECTION>
   <DATASECTION>
     <OeREBKRMkvs_V2_0.Konfiguration BID="ch.admin.v_d.oerebkrmkvs_konfiguration_texte">
@@ -944,15 +943,15 @@ Version    | Who   | Modification
             <LocalisedText>
               <LocalisationCH_V1.LocalisedMText>
                 <Language>de</Language>
-                <Text>Fliessgewässer können nur wieder naturnäher werden, wenn ausreichend Raum in den Schutz der Gewässer miteinbezogen wird. Der Gewässerraum soll weitgehend frei von neuen Anlagen bleiben; bestehende Anlagen haben jedoch Bestandesgarantie.</Text>
+                <Text>Fliessgewässer können nur wieder naturnäher werden, wenn ausreichend Raum in den Schutz der Gewässer miteinbezogen wird. Der Gewässerraum soll weitgehend frei von neuen Anlagen bleiben; bestehende, rechtmässig erstellte Anlagen haben jedoch Bestandesgarantie.</Text>
               </LocalisationCH_V1.LocalisedMText>
               <LocalisationCH_V1.LocalisedMText>
                 <Language>fr</Language>
-                <Text>Les cours d'eau ne peuvent retrouver leur état naturel que si un espace suffisant est ménagé afin qu'ils puissent remplir leurs diverses fonctions. Ces surfaces doivent rester libres de toute nouvelle installation. Les installations existantes bénéficient de la garantie de la situation acquise.</Text>
+                <Text>Les cours d'eau ne peuvent retrouver leur état naturel que si un espace suffisant est ménagé afin qu'ils puissent remplir leurs diverses fonctions. Ces surfaces doivent rester libres de toute nouvelle installation. Les installations existantes, mises en place légalement bénéficient de la garantie de la situation acquise.</Text>
               </LocalisationCH_V1.LocalisedMText>
               <LocalisationCH_V1.LocalisedMText>
                 <Language>it</Language>
-                <Text>I corsi d'acqua possono tornare a essere più naturali soltanto se si proteggono a sufficienza le acque. Nello spazio riservato alle acque non devono essere costruiti nuovi impianti, mentre possono essere mantenuti quelli già esistenti.</Text>
+                <Text>I corsi d'acqua possono tornare a essere più naturali soltanto se si proteggono a sufficienza le acque. Nello spazio riservato alle acque non devono essere costruiti nuovi impianti, mentre possono essere mantenuti quelli già esistenti realizzati in conformità con le vigenti disposizioni.</Text>
               </LocalisationCH_V1.LocalisedMText>
               <LocalisationCH_V1.LocalisedMText>
                 <Language>rm</Language>
