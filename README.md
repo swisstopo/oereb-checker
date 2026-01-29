@@ -13,8 +13,10 @@ The workflow automatically triggers on pushes to the following branches when cha
 - `pom.xml`
 
 **Enabled branches:**
-- `main` - Production builds with tags: `main`, `main-<version>`
+- `main` - Production builds with tags: `latest`, `main`, `main-<version>`
 - `fix/lambda-debugging-improvements` - Feature branch builds with tags: `fix-lambda-debugging-improvements`, `fix-lambda-debugging-improvements-<version>`
+
+**Note:** Feature branches are added to automatic triggers on a case-by-case basis. For ad-hoc testing, use the manual workflow dispatch option below.
 
 ### Manual Trigger
 
@@ -31,6 +33,7 @@ You can also manually trigger a build from any branch using GitHub's workflow di
 Images are pushed to ECR with the following tagging strategy:
 
 - **Main branch:** 
+  - `<ecr-repo>:latest` (always points to the most recent main build)
   - `<ecr-repo>:main`
   - `<ecr-repo>:main-<version>`
   
@@ -38,14 +41,16 @@ Images are pushed to ECR with the following tagging strategy:
   - `<ecr-repo>:<sanitized-branch-name>`
   - `<ecr-repo>:<sanitized-branch-name>-<version>`
   
-Branch names are sanitized by replacing forward slashes with hyphens (e.g., `fix/lambda-debugging-improvements` becomes `fix-lambda-debugging-improvements`).
+Branch names are sanitized by replacing invalid characters with hyphens (e.g., `fix/lambda-debugging-improvements` becomes `fix-lambda-debugging-improvements`).
 
-### Testing Lambda from a Feature Branch
+### Testing with Feature Branch Images
 
-To test Lambda with an image from the `fix/lambda-debugging-improvements` branch:
+To test your Lambda with an image from a feature branch:
 
-1. Push your changes to the `fix/lambda-debugging-improvements` branch
-2. The workflow will automatically build and push the image to ECR
-3. Use the ECR image with tag `fix-lambda-debugging-improvements` or `fix-lambda-debugging-improvements-<version>` in your Lambda configuration
+1. Push your changes to the feature branch (e.g., `fix/lambda-debugging-improvements`)
+2. The workflow will automatically build and push the image to ECR (if the branch is in the enabled list) or manually trigger the workflow via workflow dispatch
+3. Use the ECR image with the sanitized branch name tag (e.g., `fix-lambda-debugging-improvements`) or versioned tag (e.g., `fix-lambda-debugging-improvements-<version>`) in your Lambda configuration
 
-**Note:** GitHub Releases are only created for builds from the `main` branch.
+**Note:** 
+- GitHub Releases are only created for builds from the `main` branch
+- The `latest` tag always points to the most recent `main` branch build and is not updated by feature branch builds
