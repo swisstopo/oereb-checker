@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - fix/lambda-debugging-improvements
     paths:
       - 'docker-oereb/**'
       - 'src/main/**'
@@ -54,6 +55,17 @@ jobs:
           # If true, the body of commits will also be searched for major/minor patterns to determine the version type.
           search_commit_body: true
 
+      - name: Extract branch name
+        id: branch
+        shell: bash
+        run: |
+          # Extract branch name and sanitize it for use in Docker tags
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          # Replace forward slashes with hyphens for Docker tag compatibility
+          SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | sed 's/\//-/g')
+          echo "name=$SANITIZED_BRANCH" >> $GITHUB_OUTPUT
+          echo "Branch name: $SANITIZED_BRANCH"
+
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -70,10 +82,11 @@ jobs:
           file: ./docker-oereb/Dockerfile
           push: true
           tags: |
-            ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:latest
-            ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.version.outputs.version }}
+            ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.branch.outputs.name }}
+            ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.branch.outputs.name }}-${{ steps.version.outputs.version }}
 
       - name: Create GitHub Release
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
