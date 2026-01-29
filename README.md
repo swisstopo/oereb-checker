@@ -48,7 +48,7 @@ Branch names are sanitized by replacing invalid characters with hyphens (e.g., `
 To test your Lambda with an image from a feature branch:
 
 1. Push your changes to the feature branch (e.g., `fix/lambda-debugging-improvements`)
-2. The workflow will automatically build and push the image to ECR (if the branch is in the enabled list) or manually trigger the workflow via workflow dispatch
+2. The workflow will automatically build and push the image to ECR (if the branch is in the enabled list). Alternatively, you can manually trigger the workflow via workflow dispatch
 3. Use the ECR image with the sanitized branch name tag (e.g., `fix-lambda-debugging-improvements`) or versioned tag (e.g., `fix-lambda-debugging-improvements-<version>`) in your Lambda configuration
 
 **Note:** 

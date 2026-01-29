@@ -61,11 +61,12 @@ jobs:
         run: |
           # Extract branch name and sanitize it for use in Docker tags
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
-          # Replace invalid characters with hyphens for Docker tag compatibility
-          # Docker tags must match [a-zA-Z0-9_.-]+ and be limited to 128 characters
+          echo "Original branch: $BRANCH_NAME"
+          # Replace invalid characters with hyphens for Docker tag name compatibility
+          # Docker tag names must match [a-zA-Z0-9_.-]+ and be limited to 128 characters
           SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9._-]/-/g' | cut -c1-128)
+          echo "Sanitized branch: $SANITIZED_BRANCH"
           echo "name=$SANITIZED_BRANCH" >> $GITHUB_OUTPUT
-          echo "Branch name: $SANITIZED_BRANCH"
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v5
