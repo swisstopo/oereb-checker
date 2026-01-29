@@ -14,6 +14,7 @@
 
     <Loggers>
         <Logger name="org.verapdf" level="ERROR"/>
+        <!-- <Root level="WARN" -->
         <Root level="INFO">
             <AppenderRef ref="LambdaConsole"/>
         </Root>
