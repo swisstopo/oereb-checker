@@ -4,6 +4,7 @@ import ch.swisstopo.oerebchecker.CliParser;
 import ch.swisstopo.oerebchecker.config.models.*;
 import ch.swisstopo.oerebchecker.storage.S3StorageProvider;
 import ch.swisstopo.oerebchecker.models.Canton;
+import ch.swisstopo.oerebchecker.utils.EnvVars;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import jakarta.xml.bind.JAXBContext;
@@ -26,8 +27,6 @@ import java.util.stream.Stream;
 public class ConfigManager {
     private static final Logger logger = LoggerFactory.getLogger(ConfigManager.class);
 
-    private static final String s3ConfigEnvKey = "S3Config";
-
     private static Path configFilePath;
     private static final Map<Canton, CantonConfig> cantonConfigs = new Hashtable<>();
 
@@ -37,18 +36,22 @@ public class ConfigManager {
 
     public static void loadConfigs(S3StorageProvider storageProvider) {
 
-        String configFilePathString = System.getenv(s3ConfigEnvKey);
+        String configFilePathString = System.getenv(EnvVars.S3_SCRIPTS_CONFIG_KEY);
 
         if (configFilePathString == null || configFilePathString.isBlank()) {
-            logger.error("No value for environment variable: '{}'", s3ConfigEnvKey);
+            logger.error("No value for environment variable: '{}'", EnvVars.S3_SCRIPTS_CONFIG_KEY);
         } else {
-            configFilePath = Paths.get(configFilePathString);
-            byte[] cantonConfigData = storageProvider.readObject(configFilePath);
-            CantonConfig cantonConfig = getCantonConfig(configFilePath, cantonConfigData);
-            if (cantonConfig != null) {
-                Canton canton = getCantonFromConfigOrPath(cantonConfig, configFilePath);
-                cantonConfigs.put(canton, cantonConfig);
-            }
+            loadConfigFromS3(storageProvider, configFilePathString);
+        }
+    }
+
+    public static void loadConfigFromS3(S3StorageProvider storageProvider, String key) {
+        configFilePath = Paths.get(key);
+        byte[] cantonConfigData = storageProvider.readObject(configFilePath);
+        CantonConfig cantonConfig = getCantonConfig(configFilePath, cantonConfigData);
+        if (cantonConfig != null) {
+            Canton canton = getCantonFromConfigOrPath(cantonConfig, configFilePath);
+            cantonConfigs.put(canton, cantonConfig);
         }
     }
 
@@ -114,7 +117,6 @@ public class ConfigManager {
                 String format = cli.getFormat() != null ? cli.getFormat() : "xml";
                 Integer expectedStatus = cli.getExpectedStatusCode();
                 boolean provoke500 = cli.getProvoke500();
-
 
                 if ("GetVersions".equalsIgnoreCase(type)) {
                     var c = new GetVersionsConfig();

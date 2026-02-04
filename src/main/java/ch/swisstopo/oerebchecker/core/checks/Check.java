@@ -6,6 +6,7 @@ import ch.swisstopo.oerebchecker.results.CheckResult;
 import ch.swisstopo.oerebchecker.models.ResponseFormat;
 import ch.swisstopo.oerebchecker.models.ResponseStatusCode;
 import ch.swisstopo.oerebchecker.core.validation.Validator;
+import ch.swisstopo.oerebchecker.utils.EnvVars;
 import ch.swisstopo.oerebchecker.utils.RequestHelper;
 import ch.swisstopo.oerebchecker.utils.XPathHelper;
 import org.slf4j.Logger;
@@ -28,7 +29,7 @@ public abstract class Check implements ICheck {
     protected static final double maxImageAspectRatioPercentageDifference;
 
     static {
-        String envVal = System.getenv("MaxImageAspectRatioPercentageDifference");
+        String envVal = System.getenv(EnvVars.MAX_IMAGE_ASPECT_RATIO_PERCENTAGE_DIFFERENCE);
         double defaultValue = 10.0; // Fallback value
         double value;
         try {
@@ -79,7 +80,7 @@ public abstract class Check implements ICheck {
             responseStatusCode = config.ExpectedStatusCode;
         }
 
-        if(config.Provoke500) {
+        if (config.Provoke500) {
             responseStatusCode = ResponseStatusCode.INTERNAL_SERVER_ERROR;
             provoke500 = true;
         }

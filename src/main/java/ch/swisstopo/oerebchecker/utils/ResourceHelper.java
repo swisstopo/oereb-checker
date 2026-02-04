@@ -1,9 +1,14 @@
 package ch.swisstopo.oerebchecker.utils;
 
 import java.io.*;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 public class ResourceHelper {
+
+    public static URL getResourceUrl(String path) {
+        return Thread.currentThread().getContextClassLoader().getResource(path);
+    }
 
     public static InputStream getResourceStream(String path) {
         InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);

@@ -23,6 +23,10 @@ public class CliParser {
         }
     }
 
+    public String getKey() {
+        return getParam("Key");
+    }
+
     public boolean isHelpRequested() {
         return options.containsKey("-help") || options.containsKey("-info");
     }

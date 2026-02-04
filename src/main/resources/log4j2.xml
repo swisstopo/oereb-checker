@@ -6,19 +6,16 @@
                        https://logging.apache.org/xml/ns/log4j-config-2.xsd">
 
     <Appenders>
+        <!-- Console appender for Lambda compatibility (Lambda filesystem is read-only except /tmp) -->
         <Console name="LambdaConsole">
             <PatternLayout pattern="[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%X{canton}] [%t] %c{1}:%L - %msg%n"/>
         </Console>
-        <File name="File" fileName="./out/logs/oerebchecker.log">
-            <PatternLayout pattern="[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%X{canton}] [%t] %c{1}:%L - %msg%n"/>
-        </File>
     </Appenders>
 
     <Loggers>
         <Logger name="org.verapdf" level="ERROR"/>
-        <Root level="TRACE">
-            <AppenderRef ref="LambdaConsole" level="TRACE"/>
-            <AppenderRef ref="File" level="DEBUG"/>
+        <Root level="INFO">
+            <AppenderRef ref="LambdaConsole"/>
         </Root>
     </Loggers>
 

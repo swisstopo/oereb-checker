@@ -1,5 +1,6 @@
 package ch.swisstopo.oerebchecker.manager;
 
+import ch.swisstopo.oerebchecker.utils.ResourceHelper;
 import ch.swisstopo.oerebchecker.utils.uid.IPublicServices;
 import ch.swisstopo.oerebchecker.utils.uid.PublicServices;
 import org.slf4j.Logger;
@@ -16,8 +17,13 @@ public class UidManager {
 
     static {
         try {
-            // Initializing the generated Service and Port
-            PublicServices service = new PublicServices();
+            // Load the WSDL via the ClassLoader to ensure it is found within the JAR/Docker container.
+            // Using absolute filesystem paths fails in the Lambda environment.
+            java.net.URL wsdlResource = ResourceHelper.getResourceUrl("ch/swisstopo/bfs/www.uid-wse.admin.ch_V5.0_PublicServices.svc_wsdl.xml");
+            if (wsdlResource == null) {
+                throw new RuntimeException("UID Service WSDL not found in classpath");
+            }
+            PublicServices service = new PublicServices(wsdlResource);
             servicePort = service.getBasicHttpBindingIPublicServices();
             logger.info("UID Public Services initialized.");
         } catch (Exception e) {

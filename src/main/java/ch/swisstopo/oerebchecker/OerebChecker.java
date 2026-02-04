@@ -11,6 +11,7 @@ import ch.swisstopo.oerebchecker.manager.ResultManager;
 import ch.swisstopo.oerebchecker.results.CantonResult;
 import ch.swisstopo.oerebchecker.results.CheckResult;
 import ch.swisstopo.oerebchecker.models.Canton;
+import ch.swisstopo.oerebchecker.utils.EnvVars;
 import ch.swisstopo.oerebchecker.utils.RequestHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,10 +35,11 @@ public class OerebChecker {
     public static void main(String[] args) {
         try {
             execute(args);
-            System.exit(0);
         } catch (Exception ex) {
             logger.error("Critical failure: {}", ex.getMessage(), ex);
-            System.exit(1);
+            // Re-throw as RuntimeException instead of System.exit() for Lambda compatibility.
+            // AWS Lambda captures the exception and logs the failure correctly.
+            throw new RuntimeException("Application failed", ex);
         }
     }
 
@@ -47,27 +49,34 @@ public class OerebChecker {
 
         if (cli.isHelpRequested()) {
             cli.printHelp();
-            System.exit(0);
+            return;
         }
 
         // 1. Initialize Storage
-        S3StorageProvider.createFromEnv("S3ResultBucket").ifPresent(provider -> {
+        S3StorageProvider.createFromEnv(EnvVars.S3_RESULTS_BUCKET).ifPresent(provider -> {
             storageProvider = provider;
-            logger.info("S3 Storage initialized.");
+            logger.info("S3 Results Storage initialized.");
         });
 
         // 2. Load Config
         boolean localConfigLoaded = ConfigManager.loadConfigs(cli);
 
-        if (!localConfigLoaded && storageProvider instanceof S3StorageProvider) {
-            logger.info("Local config not found, attempting to load from S3 config bucket...");
-            S3StorageProvider.createFromEnv("S3ConfigBucket")
-                    .ifPresent(ConfigManager::loadConfigs);
+        if (!localConfigLoaded) {
+            String s3Key = cli.getKey();
+            if (s3Key != null) {
+                logger.debug("Local config not found, attempting to load from S3 via key: {}", s3Key);
+                S3StorageProvider.createFromEnv(EnvVars.S3_SCRIPTS_BUCKET).ifPresent(provider -> {
+                    ConfigManager.loadConfigFromS3(provider, s3Key);
+                });
+            } else {
+                // Fallback: try loading from SCRIPTS_BUCKET with S3Config env var
+                logger.debug("Local config not found and no S3 key provided, attempting fallback to SCRIPTS_BUCKET...");
+                S3StorageProvider.createFromEnv(EnvVars.S3_SCRIPTS_BUCKET).ifPresent(ConfigManager::loadConfigs);
+            }
         }
 
         if (ConfigManager.getCantonConfigs().isEmpty()) {
-            logger.error("Application configuration is empty or could not be parsed. Please check your config source.");
-            System.exit(1);
+            throw new RuntimeException("Application configuration is empty or could not be parsed. Please check your config source.");
         }
 
         // 3. Load Metadata
@@ -163,21 +172,24 @@ public class OerebChecker {
 
     private static Path getOutputDirectoryPath(CantonConfig config) {
 
-        String envPath = System.getenv("S3ResultOutputPath");
+        // Use null check instead of isNotBlank because an empty string ("") represents the S3 bucket root.
+        String envPath = System.getenv(EnvVars.S3_RESULTS_OUTPUT_PATH);
         if (envPath != null) {
-            logger.trace("Found & use S3 Result Output Path: {}", envPath);
+            logger.trace("Found & use {}: '{}'", EnvVars.S3_RESULTS_OUTPUT_PATH, envPath);
             return Paths.get(envPath);
         }
-        envPath = System.getenv("OUTPUT_PATH");
-        if (envPath != null) {
-            logger.trace("Found & use OUTPUT_PATH: {}", envPath);
-            return Paths.get(envPath).toAbsolutePath();
+        envPath = System.getenv(EnvVars.OUTPUT_PATH);
+        if (StringUtils.isNotBlank(envPath)) {
+            logger.trace("Found & use {}: '{}'", EnvVars.OUTPUT_PATH, envPath);
+            return Paths.get(envPath);
         }
-        if (config.OutputDirectoryPath != null) {
-            logger.trace("Found & use OutputDirectoryPath: {}", config.OutputDirectoryPath);
-            return Paths.get(config.OutputDirectoryPath).toAbsolutePath();
+        if (StringUtils.isNotBlank(config.OutputDirectoryPath)) {
+            logger.trace("Found & use config OutputDirectoryPath: '{}'", config.OutputDirectoryPath);
+            return Paths.get(config.OutputDirectoryPath);
         }
 
-        return Path.of("").toAbsolutePath().resolve("output");
+        // Default: bucket root (empty path for S3, or current directory for local).
+        logger.trace("Using default output path: root");
+        return Paths.get("");
     }
 }
