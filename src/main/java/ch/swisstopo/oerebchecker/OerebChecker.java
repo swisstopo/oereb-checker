@@ -41,7 +41,7 @@ public class OerebChecker {
         }
     }
 
-    public static void execute(String[] args) throws Exception {
+    public static void execute(String[] args) {
         CliParser cli = new CliParser(args);
         logger.trace("Application started with arguments: {}", String.join(" ", args));
 

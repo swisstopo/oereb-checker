@@ -1,6 +1,7 @@
 package ch.swisstopo.oerebchecker.core.checks;
 
 import ch.swisstopo.oerebchecker.config.models.GetCapabilitiesConfig;
+import ch.swisstopo.oerebchecker.core.validation.ValidatorMessage;
 import ch.swisstopo.oerebchecker.models.ResponseStatusCode;
 import ch.swisstopo.oerebchecker.results.CheckResult;
 import ch.swisstopo.oerebchecker.utils.RequestHelper;
@@ -11,11 +12,14 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class GetCapabilities extends Check {
     protected static final Logger logger = LoggerFactory.getLogger(GetCapabilities.class);
 
+    private CapabilitiesData parsedCapabilities = null;
 
     public GetCapabilities(URI basicUri, GetCapabilitiesConfig config) {
 
@@ -40,6 +44,10 @@ public class GetCapabilities extends Check {
         }
     }
 
+    public CapabilitiesData getParsedCapabilities() {
+        return parsedCapabilities != null ? parsedCapabilities : CapabilitiesData.empty();
+    }
+
     @Override
     protected void postProcess() {
         readCapabilities();
@@ -47,33 +55,54 @@ public class GetCapabilities extends Check {
 
     protected void readCapabilities() {
 
-        if (getCapabilitiesTopicCodes.isEmpty() && result.StatusCode == ResponseStatusCode.OK  && responseFormat == ResponseFormat.xml && result.XmlIsValid != null && result.XmlIsValid) {
+        if (result.StatusCode == ResponseStatusCode.OK
+                && responseFormat == ResponseFormat.xml
+                && result.XmlIsValid != null
+                && result.XmlIsValid) {
+
             try {
                 Document doc = getResponseXmlDocument();
                 logger.trace("Parsing GetCapabilities XML to extract topic codes and languages.");
 
+                List<String> topicCodes = new ArrayList<>();
                 NodeList nodes = xpath.getNodes(doc, "//e:topic/ed:Code");
                 for (int i = 0; i < nodes.getLength(); i++) {
                     String code = nodes.item(i).getTextContent();
                     logger.trace("Found Topic Code in Capabilities: {}", code);
-                    getCapabilitiesTopicCodes.add(code);
+                    topicCodes.add(code);
                 }
 
+                List<String> languages = new ArrayList<>();
                 NodeList langNodes = xpath.getNodes(doc, "//e:language");
                 for (int i = 0; i < langNodes.getLength(); i++) {
                     String lang = langNodes.item(i).getTextContent().toLowerCase();
                     logger.trace("Found Language in Capabilities: {}", lang);
-                    getCapabilitiesLanguages.add(lang);
+                    languages.add(lang);
                 }
 
-                logger.trace("Read {} topics and {} languages from capabilities.", getCapabilitiesTopicCodes.size(), getCapabilitiesLanguages.size());
+                parsedCapabilities = new CapabilitiesData(
+                        topicCodes.stream().distinct().toList(),
+                        languages.stream().distinct().toList()
+                );
+
+                logger.trace("Read {} topics and {} languages from capabilities.", parsedCapabilities.topicCodes().size(), parsedCapabilities.languages().size());
             } catch (Exception e) {
                 logger.error("XPath failed to read capabilities: {}", e.getMessage());
-            } finally {
-                capabilitiesLatch.countDown();
+                parsedCapabilities = CapabilitiesData.empty();
+
+                if (result != null) {
+                    result.addMessage("Capabilities Validation",
+                            ValidatorMessage.error(
+                                    "Capabilities",
+                                    "Parse",
+                                    "Failed to parse GetCapabilities response (XPath evaluation error).",
+                                    e.getMessage()
+                            )
+                    );
+                }
             }
         } else {
-            capabilitiesLatch.countDown();
+            parsedCapabilities = CapabilitiesData.empty();
         }
     }
 }

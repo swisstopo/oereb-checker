@@ -14,7 +14,7 @@ public class ValidatorResult {
     }
 
     public void addMessage(String flavor, String rule, String message, String detail) {
-        Messages.add(new ValidatorMessage(flavor, rule, message, detail));
+        Messages.add(ValidatorMessage.error(flavor, rule, message, detail));
     }
 
     public void addMessage(String message, String detail) {

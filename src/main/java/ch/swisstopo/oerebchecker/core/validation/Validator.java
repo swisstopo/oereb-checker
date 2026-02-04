@@ -157,6 +157,14 @@ public class Validator {
         } catch (Exception ex) {
             result.IsValid = false;
             logger.error("Error: {}", ex.getMessage(), ex);
+
+            String message =  ex.getCause() == null? ex.getMessage() : ex.getCause().getMessage();
+            result.addMessage(
+                    "PDF",
+                    "Open/Parse",
+                    "PDF could not be opened/parsed for validation (file may be corrupted or not a PDF).",
+                    message
+            );
         }
 
         return result;

@@ -1,6 +1,7 @@
 package ch.swisstopo.oerebchecker.core.checks;
 
 import ch.swisstopo.oerebchecker.config.models.GetVersionsConfig;
+import ch.swisstopo.oerebchecker.core.validation.ValidatorMessage;
 import ch.swisstopo.oerebchecker.results.CheckResult;
 import ch.swisstopo.oerebchecker.utils.RequestHelper;
 import ch.swisstopo.oerebchecker.models.ResponseFormat;
@@ -40,10 +41,34 @@ public class GetVersions extends Check {
 
     private boolean checkSupportedVersion(Document doc) {
         try {
+            String expected = "extract-2.0";
             String version = xpath.getString(doc, "//v:supportedVersion[v:version='extract-2.0']/v:version");
-            return "extract-2.0".equals(version);
+
+            boolean ok = expected.equals(version);
+            if (!ok && result != null) {
+                result.addMessage("Business Logic",
+                        ValidatorMessage.error(
+                                "Business Logic",
+                                "Supported Version",
+                                "Expected supported version '" + expected + "', but found '" + version + "' in the response.",
+                                ""
+                        )
+                );
+            }
+            return ok;
+
         } catch (Exception e) {
             logger.error("XPath error in GetVersions: {}", e.getMessage());
+            if (result != null) {
+                result.addMessage("Business Logic",
+                        ValidatorMessage.error(
+                                "Business Logic",
+                                "Supported Version",
+                                "Failed to evaluate supported versions (XPath evaluation error).",
+                                e.getMessage()
+                        )
+                );
+            }
             return false;
         }
     }

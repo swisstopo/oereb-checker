@@ -117,29 +117,50 @@ public class GetExtractById extends Check {
         return true;
     }
 
-    private void runGetCapabilities() {
-        if (capabilitiesSyncComplete) {
-            logger.trace("Capabilities already synced, skipping.");
-            return;
-        }
+    private CapabilitiesData getCapabilitiesData() {
+        return CapabilitiesRegistry.getOrLoad(basicUri, this::loadCapabilitiesForThisEndpoint);
+    }
 
-        capabilitiesLock.lock();
-
+    private CapabilitiesData loadCapabilitiesForThisEndpoint() {
         try {
-            if (!capabilitiesSyncComplete) {
-                GetCapabilitiesConfig config = new GetCapabilitiesConfig();
-                config.FORMAT = ResponseFormat.xml.name();
-                config.ExpectedStatusCode = 200;
+            GetCapabilitiesConfig cfg = new GetCapabilitiesConfig();
+            cfg.FORMAT = ResponseFormat.xml.name();
+            cfg.ExpectedStatusCode = 200;
 
-                new GetCapabilities(basicUri, config).run();
-                capabilitiesSyncComplete = true;
+            GetCapabilities check = new GetCapabilities(basicUri, cfg);
+            CheckResult capResult = check.run();
+
+            if (capResult == null) {
+                if (result != null) {
+                    result.addMessage("Capabilities Validation",
+                            ValidatorMessage.error("Capabilities", "Load", "GetCapabilities did not return a result.", "")
+                    );
+                }
+                return CapabilitiesData.empty();
             }
+
+            if (capResult.StatusCode != ResponseStatusCode.OK || capResult.XmlIsValid == null || !capResult.XmlIsValid) {
+                if (result != null) {
+                    result.addMessage("Capabilities Validation",
+                            ValidatorMessage.error("Capabilities", "Load", "GetCapabilities response was not OK or XML was invalid.", "")
+                    );
+                }
+                return CapabilitiesData.empty();
+            }
+
+            return check.getParsedCapabilities();
+
         } catch (Exception e) {
             logger.error("Failed to load capabilities: {}", e.getMessage(), e);
-        } finally {
-            capabilitiesLock.unlock();
+            if (result != null) {
+                result.addMessage("Capabilities Validation",
+                        ValidatorMessage.error("Capabilities", "Load", "Failed to load or parse GetCapabilities.", e.getMessage())
+                );
+            }
+            return CapabilitiesData.empty();
         }
     }
+
 
     private boolean checkRealEstate_DPR(Document doc) {
         try {
@@ -153,7 +174,7 @@ public class GetExtractById extends Check {
             boolean valid = egridMatch || identMatch;
             if (!valid) {
                 result.addMessage("Business Logic",
-                        new ValidatorMessage("Business Logic", "RealEstate Match", "XML RealEstate does not match requested EGRID: " + requestParams.get("EGRID"), "")
+                        ValidatorMessage.error("Business Logic", "RealEstate Match", "XML RealEstate does not match requested EGRID: " + requestParams.get("EGRID"), "")
                 );
             }
             return valid;
@@ -169,7 +190,7 @@ public class GetExtractById extends Check {
 
         if (!requestedResponseMap.containsKey(uri)) {
             logger.trace("Cache miss for URI: {}. Initiating network request.", uri);
-            request = HttpRequest.newBuilder().uri(new URI(uri)).build();
+            request = RequestHelper.createRequest(new URI(uri));
             response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
             requestedResponseMap.put(uri, response);
         } else {
@@ -214,7 +235,7 @@ public class GetExtractById extends Check {
             if (response.statusCode() != 200) {
                 String msg = "Failed to load reference '" + uri + "' (HTTP " + response.statusCode() + ")";
                 result.addMessage("Reference Check",
-                        new ValidatorMessage("Reference Check", "Broken Link", msg, xpath.getPath(node))
+                        ValidatorMessage.error("Reference Check", "Broken Link", msg, xpath.getPath(node))
                 );
                 logger.debug("{}. Location: {}", msg, xpath.getPath(node));
                 return false;
@@ -236,13 +257,13 @@ public class GetExtractById extends Check {
                 int restrictionCount = xpath.getCount(doc, "//ed:RestrictionOnLandownership");
                 if (geometryCount != restrictionCount) {
                     result.addMessage("Parameter Validation",
-                            new ValidatorMessage("Parameter Logic", "GEOMETRY=true", "Expected " + restrictionCount + " (one per restriction), but found " + geometryCount, "")
+                            ValidatorMessage.error("Parameter Logic", "GEOMETRY=true", "Expected " + restrictionCount + " (one per restriction), but found " + geometryCount, "")
                     );
                     return false;
                 }
             } else if (geometryCount > 0) {
                 result.addMessage("Parameter Validation",
-                        new ValidatorMessage("Parameter Logic", "GEOMETRY=false", "Geometries found in XML although GEOMETRY=false was requested.", "")
+                        ValidatorMessage.error("Parameter Logic", "GEOMETRY=false", "Geometries found in XML although GEOMETRY=false was requested.", "")
                 );
                 return false;
             }
@@ -308,7 +329,7 @@ public class GetExtractById extends Check {
             String title = "Invalid image format";
             String message = "The image format is invalid because it is not a PNG at node: " + xpath.getPath(imageNode);
 
-            result.addMessage("Image Validation", new ValidatorMessage(title, message));
+            result.addMessage("Image Validation", ValidatorMessage.error(title, message));
             logger.debug("{}", message);
         }
 
@@ -324,7 +345,7 @@ public class GetExtractById extends Check {
             String title = "Invalid image aspect ratio";
             String message = "The 'expectedAspectRatio' cannot be zero (check requested height/width).";
 
-            result.addMessage("Image Validation", new ValidatorMessage(title, message));
+            result.addMessage("Image Validation", ValidatorMessage.error(title, message));
             logger.debug("{}", message);
 
         } else {
@@ -337,7 +358,7 @@ public class GetExtractById extends Check {
             String title = "Invalid image aspect ratio";
             String message = "The image aspect ratio is invalid. The percentage difference is " + String.format("%.2f", percentageDifference) + "%. Expected: " + expectedAspectRatio + ", Found: " + existingAspectRatio + " at node: " + xpath.getPath(imageNode);
 
-            result.addMessage("Image Validation", new ValidatorMessage(title, message));
+            result.addMessage("Image Validation", ValidatorMessage.error(title, message));
             logger.debug("{}", message);
         }
 
@@ -363,7 +384,7 @@ public class GetExtractById extends Check {
                         boolean nodeIsValid = validateAndCacheImage(base64, parentNode, h, w, checkedMap);
                         if (!nodeIsValid) {
                             result.addMessage("Image Validation",
-                                    new ValidatorMessage("Invalid image", "The image aspect ratio is invalid or it is not a PNG at node: " + xpath.getPath(parentNode))
+                                    ValidatorMessage.error("Invalid image", "The image aspect ratio is invalid or it is not a PNG at node: " + xpath.getPath(parentNode))
                             );
                         }
                         isValid = nodeIsValid && isValid;
@@ -421,7 +442,7 @@ public class GetExtractById extends Check {
     private boolean validateAndCacheRemoteImage(String uri, Node node, int h, int w, Map<String, Boolean> cache) throws Exception {
         if (StringUtils.isBlank(uri)) {
             result.addMessage("Image Validation",
-                    new ValidatorMessage("Broken Reference", "Empty URI", "An image reference (WMS/Symbol) has an empty or blank URI.", xpath.getPath(node))
+                    ValidatorMessage.error("Broken Reference", "Empty URI", "An image reference (WMS/Symbol) has an empty or blank URI.", xpath.getPath(node))
             );
             return false;
         }
@@ -435,7 +456,7 @@ public class GetExtractById extends Check {
                 cache.put(uri, false);
                 String msg = "Failed to load image for aspect ratio check: " + uri + " (HTTP " + response.statusCode() + ")";
                 result.addMessage("Image Validation",
-                        new ValidatorMessage("Network Error", "Image Load", msg, xpath.getPath(node))
+                        ValidatorMessage.error("Network Error", "Image Load", msg, xpath.getPath(node))
                 );
                 logger.warn(msg);
             }
@@ -445,24 +466,13 @@ public class GetExtractById extends Check {
 
     private boolean checkParamLang(Document doc) {
 
-        if (getCapabilitiesLanguages.isEmpty()) {
-            if (capabilitiesSyncComplete) {
-                try {
-                    logger.trace("Waiting for capabilities synchronization...");
-                    capabilitiesLatch.await();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    logger.error("Interrupted while waiting for capabilities: {}", e.getMessage());
-                }
-            } else {
-                runGetCapabilities();
-            }
-        }
+        CapabilitiesData caps = getCapabilitiesData();
+        List<String> capabilitiesLanguages = new ArrayList<>(caps.languages());
 
-        if (getCapabilitiesLanguages.isEmpty()) {
+        if (capabilitiesLanguages.isEmpty()) {
             String msg = "Language check failed: No languages found in GetCapabilities response";
             result.addMessage("Language Validation",
-                    new ValidatorMessage("Capabilities", "Language Sync", msg, "")
+                    ValidatorMessage.error("Capabilities", "Language Sync", msg, "")
             );
             logger.error(msg);
             return false;
@@ -478,7 +488,7 @@ public class GetExtractById extends Check {
 
             if (foundLanguages.isEmpty()) {
                 result.addMessage("Language Validation",
-                        new ValidatorMessage("Parameter Logic", "LANG=null", "No language found in XML", "")
+                        ValidatorMessage.error("Parameter Logic", "LANG=null", "No language found in XML", "")
                 );
                 return false;
             }
@@ -487,19 +497,17 @@ public class GetExtractById extends Check {
                 boolean contains = foundLanguages.contains(config.LANG) && foundLanguages.size() == 1;
                 if (!contains) {
                     result.addMessage("Language Validation",
-                            new ValidatorMessage("Parameter Logic", "LANG=" + config.LANG, "Requested language '" + config.LANG + "' not found or multiple languages present: " + foundLanguages, "")
+                            ValidatorMessage.error("Parameter Logic", "LANG=" + config.LANG, "Requested language '" + config.LANG + "' not found or multiple languages present: " + foundLanguages, "")
                     );
                 }
                 return contains;
 
             } else {
-                List<String> capabilitiesLanguages = new ArrayList<>(getCapabilitiesLanguages);
-
                 foundLanguages.removeAll(capabilitiesLanguages);
                 boolean valid = foundLanguages.isEmpty();
                 if (!valid) {
                     result.addMessage("Language Validation",
-                            new ValidatorMessage("Parameter Logic", "LANG not set", "Included language/s not found in capabilities: " + foundLanguages, "")
+                            ValidatorMessage.error("Parameter Logic", "LANG not set", "Included language/s not found in capabilities: " + foundLanguages, "")
                     );
                 }
                 return valid;
@@ -518,7 +526,7 @@ public class GetExtractById extends Check {
 
             if (concernedThemeNodes.getLength() == 0 && notConcernedThemeNodes.getLength() == 0 && themeWithoutDataNodes.getLength() == 0) {
                 result.addMessage("Topic Validation",
-                        new ValidatorMessage("No topics available", "There are no entries for <ConcernedTheme>, <NotConcernedTheme>, or <ThemeWithoutData>.")
+                        ValidatorMessage.error("No topics available", "There are no entries for <ConcernedTheme>, <NotConcernedTheme>, or <ThemeWithoutData>.")
                 );
                 return false;
             }
@@ -587,13 +595,50 @@ public class GetExtractById extends Check {
                             .filter(x -> x.getLanguage().equalsIgnoreCase(lang))
                             .findFirst().orElse(null);
 
-                    if (federalLocalisedText != null && !federalLocalisedText.getText().equals(text)) {
-                        titleIsValid = false;
-                        String msg = "Theme '" + code + "': Title mismatch for language '" + lang + "'. Expected: '" + federalLocalisedText.getText() + "', Found: '" + text + "'";
-                        result.addMessage("Topic Validation",
-                                new ValidatorMessage("Incorrect theme title", msg)
-                        );
-                        logger.debug(msg);
+                    if (federalLocalisedText != null) {
+                        String expectedRaw = federalLocalisedText.getText();
+                        String expectedParens = extractParenthesizedParts(expectedRaw);
+                        String expectedClean = removeParenthesizedParts(expectedRaw).trim();
+
+                        if (expectedClean != null && text != null) {
+                            if (text.equals(expectedClean)) {
+                                // OK (matches after cleaning expected)
+                                // If we removed something from expected, mention it as WARNING (informational)
+                                if (expectedParens != null) {
+                                    String msg = "Theme '" + code + "': Title matched after removing parenthesized parts from federal template for language '"
+                                            + lang + "'. Removed from expected: " + expectedParens
+                                            + ". Expected(raw): '" + expectedRaw + "', Expected(clean): '" + expectedClean + "', Found: '" + text + "'";
+                                    result.addMessage("Topic Validation",
+                                            ValidatorMessage.warning("Topic Title", "Expected had parenthesized parts", msg, null)
+                                    );
+                                }
+                            } else if (text.contains(expectedClean)) {
+                                // Extract contains expected (clean) but has additions => WARNING
+                                String msg = "Theme '" + code + "': Title contains federal template text but has additions for language '"
+                                        + lang + "'. Expected(clean): '" + expectedClean + "', Found: '" + text + "'"
+                                        + (expectedParens != null ? (", Removed from expected: " + expectedParens + " (raw expected: '" + expectedRaw + "')") : "");
+                                result.addMessage("Topic Validation",
+                                        ValidatorMessage.warning("Topic Title", "Title text extended", msg, null)
+                                );
+                            } else {
+                                // Not contained => ERROR (after cleaning expected)
+                                titleIsValid = false;
+                                String msg = "Theme '" + code + "': Title does not contain expected federal template text for language '"
+                                        + lang + "'. Expected(clean): '" + expectedClean + "', Found: '" + text + "'"
+                                        + (expectedParens != null ? (", Removed from expected: " + expectedParens + " (raw expected: '" + expectedRaw + "')") : "");
+                                result.addMessage("Topic Validation",
+                                        ValidatorMessage.error("Incorrect theme title", msg)
+                                );
+                                logger.debug(msg);
+                            }
+                        } else {
+                            titleIsValid = false;
+                            String msg = "Theme '" + code + "': Missing/empty title text for language '" + lang + "'";
+                            result.addMessage("Topic Validation",
+                                    ValidatorMessage.error("Incorrect theme title", msg)
+                            );
+                            logger.debug(msg);
+                        }
                     }
                 } catch (Exception e) {
                     titleIsValid = false;
@@ -609,27 +654,42 @@ public class GetExtractById extends Check {
         }
     }
 
+    /**
+     * Removes parenthesized parts like "Nutzungsplanung (kantonal/kommunal)" -> "Nutzungsplanung".
+     * Used only for comparison (equals/contains).
+     */
+    private static String removeParenthesizedParts(String text) {
+        if (text == null) return null;
+        String cleaned = text.replaceAll("\\s*\\([^)]*\\)", "");
+        return cleaned.trim().replaceAll("\\s{2,}", " ");
+    }
+
+    /**
+     * Extracts all "(...)" parts for reporting, returns null if none.
+     */
+    private static String extractParenthesizedParts(String text) {
+        if (text == null) return null;
+
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\([^)]*\\)").matcher(text);
+        StringBuilder sb = new StringBuilder();
+        while (m.find()) {
+            if (!sb.isEmpty()) sb.append(", ");
+            sb.append(m.group());
+        }
+        return sb.isEmpty() ? null : sb.toString();
+    }
+
     private boolean checkTopicCodesAgainstCapabilities(List<String> extractThemeCodes) {
         try {
             logger.trace("Comparing extract theme codes ({}) against capabilities topic codes.", extractThemeCodes);
 
-            if (getCapabilitiesTopicCodes.isEmpty()) {
-                if (capabilitiesSyncComplete) {
-                    try {
-                        logger.trace("Waiting for capabilities synchronization...");
-                        capabilitiesLatch.await();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        logger.error("Interrupted while waiting for capabilities: {}", e.getMessage());
-                    }
-                } else {
-                    runGetCapabilities();
-                }
-            }
-            if (getCapabilitiesTopicCodes.isEmpty()) {
+            CapabilitiesData caps = getCapabilitiesData();
+            List<String> capabilitiesTopicCodes = new ArrayList<>(caps.topicCodes());
+
+            if (capabilitiesTopicCodes.isEmpty()) {
                 String msg = "Theme check failed: No topics found in GetCapabilities response";
                 result.addMessage("Topic Validation",
-                        new ValidatorMessage("Capabilities", "Topic Sync", msg, "")
+                        ValidatorMessage.error("Capabilities", "Topic Sync", msg, "")
                 );
                 logger.error(msg);
                 return false;
@@ -638,10 +698,10 @@ public class GetExtractById extends Check {
             List<String> themeNotInGetCapabilities = new ArrayList<>();
 
             for (String extractThemeCode : extractThemeCodes) {
-                if (!getCapabilitiesTopicCodes.contains(extractThemeCode)) {
+                if (!capabilitiesTopicCodes.contains(extractThemeCode)) {
                     themeNotInGetCapabilities.add(extractThemeCode);
                     result.addMessage("Topic Validation",
-                            new ValidatorMessage("Theme missing from capabilities", "Extract theme '" + extractThemeCode + "' is not present in GetCapabilities response")
+                            ValidatorMessage.error("Theme missing from capabilities", "Extract theme '" + extractThemeCode + "' is not present in GetCapabilities response")
                     );
                 }
             }
@@ -650,11 +710,11 @@ public class GetExtractById extends Check {
 
                 List<String> themeNotInExtract = new ArrayList<>();
 
-                for (String themeCode : getCapabilitiesTopicCodes) {
+                for (String themeCode : capabilitiesTopicCodes) {
                     if (!extractThemeCodes.contains(themeCode)) {
                         themeNotInExtract.add(themeCode);
                         result.addMessage("Topic Validation",
-                                new ValidatorMessage("Capabilities theme missing in extract", "Capabilities theme '" + themeCode + "' is not present in extract")
+                                ValidatorMessage.error("Capabilities theme missing in extract", "Capabilities theme '" + themeCode + "' is not present in extract")
                         );
                     }
                 }
@@ -671,7 +731,7 @@ public class GetExtractById extends Check {
                     if (!federalTopicCodes.contains(extractThemeCode)) {
                         themeNotInFederalTopics.add(extractThemeCode);
                         result.addMessage("Topic Validation",
-                                new ValidatorMessage("Theme missing from federal topics", "Extract theme '" + extractThemeCode + "' is not present in federal topics")
+                                ValidatorMessage.error("Theme missing from federal topics", "Extract theme '" + extractThemeCode + "' is not present in federal topics")
                         );
                     }
                 }
@@ -679,7 +739,7 @@ public class GetExtractById extends Check {
                     if (!extractThemeCodes.contains(themeCode)) {
                         federalThemeNotInExtract.add(themeCode);
                         result.addMessage("Topic Validation",
-                                new ValidatorMessage("Federal theme missing in extract", "Federal theme '" + themeCode + "' is not present in extract")
+                                ValidatorMessage.error("Federal theme missing in extract", "Federal theme '" + themeCode + "' is not present in extract")
                         );
                     }
                 }
@@ -694,7 +754,7 @@ public class GetExtractById extends Check {
                 missingRequestedThemeCodes.removeAll(extractThemeCodes);
                 for (String themeCode : missingRequestedThemeCodes) {
                     result.addMessage("Topic Validation",
-                            new ValidatorMessage("Requested theme missing in extract", "Requested theme '" + themeCode + "' is not present in extract")
+                            ValidatorMessage.error("Requested theme missing in extract", "Requested theme '" + themeCode + "' is not present in extract")
                     );
                 }
 
@@ -702,7 +762,7 @@ public class GetExtractById extends Check {
                 additionalExtractThemeCodes.removeAll(requestedThemeCodes);
                 for (String themeCode : additionalExtractThemeCodes) {
                     result.addMessage("Topic Validation",
-                            new ValidatorMessage("Unrequested theme in extract", "Theme '" + themeCode + "' is not requested but present in extract")
+                            ValidatorMessage.error("Unrequested theme in extract", "Theme '" + themeCode + "' is not requested but present in extract")
                     );
                 }
 
@@ -733,7 +793,7 @@ public class GetExtractById extends Check {
             if (legalProvisionsNodes.getLength() == 0) {
                 String msg = "Topic '" + topicCode + "' has no <LegalProvisions> but federal metadata requires them.";
                 result.addMessage("Topic Validation",
-                        new ValidatorMessage("Federal Logic", "LegalProvisions", msg, "")
+                        ValidatorMessage.error("Federal Logic", "LegalProvisions", msg, "")
                 );
                 return false;
             }
@@ -766,7 +826,7 @@ public class GetExtractById extends Check {
 
                 if (shareEntries == 0) {
                     isValid = false;
-                    ValidatorMessage msg = new ValidatorMessage("Missing entries", "There are no entries for <AreaShare>, <LengthShare>, or <NrOfPoints> at " + xpath.getPath(restriction));
+                    ValidatorMessage msg = ValidatorMessage.error("Missing entries", "There are no entries for <AreaShare>, <LengthShare>, or <NrOfPoints> at " + xpath.getPath(restriction));
                     result.addMessage("Restriction Validation", msg);
                 }
             }
@@ -784,7 +844,7 @@ public class GetExtractById extends Check {
             List<Node> glossaryNodes = xpath.getNodesList(doc, "//ed:Glossary");
 
             if (glossaryNodes.isEmpty()) {
-                result.addMessage("Glossary Validation", new ValidatorMessage("Missing entries", "There are no entries for <Glossary>"));
+                result.addMessage("Glossary Validation", ValidatorMessage.error("Missing entries", "There are no entries for <Glossary>"));
                 return false;
             }
 
@@ -801,13 +861,26 @@ public class GetExtractById extends Check {
                 String titleText = xpath.getString(titleLocalisedTextNode, "ed:Text");
 
                 V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar existingGlossar = null;
+                String expectedTitleForMatch = null;
 
+                // Find matching glossary entry:
+                // - exact match => OK
+                // - extract contains template => WARNING (addition), but still match
                 for (V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar glossar : glossars) {
-                    if (glossar.getTitel().getLocalisationCHV1MultilingualText().getLocalisedText().getLocalisationCHV1LocalisedText()
-                            .stream()
-                            .filter(x -> x.getLanguage().equals(titleLanguage) && x.getText().equals(titleText))
-                            .count() == 1) {
+                    var templateTitles = glossar.getTitel()
+                            .getLocalisationCHV1MultilingualText()
+                            .getLocalisedText()
+                            .getLocalisationCHV1LocalisedText();
+
+                    var match = templateTitles.stream()
+                            .filter(x -> x.getLanguage().equals(titleLanguage))
+                            .filter(x -> x.getText() != null && titleText != null)
+                            .filter(x -> titleText.equals(x.getText()) || titleText.contains(x.getText()))
+                            .findFirst();
+
+                    if (match.isPresent()) {
                         existingGlossar = glossar;
+                        expectedTitleForMatch = match.get().getText();
                         break;
                     }
                 }
@@ -815,6 +888,13 @@ public class GetExtractById extends Check {
                 if (existingGlossar == null) {
                     continue;
                 } else {
+                    // If it matched by "contains" (not equals), this is an addition -> WARNING
+                    if (expectedTitleForMatch != null && titleText != null && !titleText.equals(expectedTitleForMatch) && titleText.contains(expectedTitleForMatch)) {
+                        String msg = "Glossary title contains template text but has additions (" + titleLanguage + "). " + "Expected contained: '" + expectedTitleForMatch + "', Found: '" + titleText + "'";
+                        result.addMessage("Glossary Validation",
+                                ValidatorMessage.warning("Template Addition", "Title text extended", msg, null)
+                        );
+                    }
                     glossars.remove(existingGlossar);
                 }
 
@@ -826,47 +906,98 @@ public class GetExtractById extends Check {
                     String language = xpath.getString(localisedText, "ed:Language");
                     String text = xpath.getString(localisedText, "ed:Text");
 
-                    localisationCHV1LocalisedText = existingGlossar.getTitel().getLocalisationCHV1MultilingualText().getLocalisedText().getLocalisationCHV1LocalisedText()
+                    var expectedOpt = existingGlossar.getTitel()
+                            .getLocalisationCHV1MultilingualText()
+                            .getLocalisedText()
+                            .getLocalisationCHV1LocalisedText()
                             .stream()
                             .filter(x -> x.getLanguage().equals(language))
                             .findFirst();
 
-                    if (localisationCHV1LocalisedText.isPresent()) {
-                        if (!localisationCHV1LocalisedText.get().getText().equals(text)) {
+                    if (expectedOpt.isPresent()) {
+                        String expected = expectedOpt.get().getText();
+
+                        if (expected != null && text != null) {
+                            if (text.equals(expected)) {
+                                // OK
+                            } else if (text.contains(expected)) {
+                                // Addition => WARNING
+                                String msg = "Title text contains template text but has additions (" + language + "). " + "Expected contained: '" + expected + "', Found: '" + text + "'";
+                                result.addMessage("Glossary Validation",
+                                        ValidatorMessage.warning("Template Addition", "Title text extended", msg, null)
+                                );
+                            } else {
+                                // Not contained => ERROR
+                                isValid = false;
+                                result.addMessage("Glossary Validation",
+                                        ValidatorMessage.error("Incorrect localized text", "Title (" + language + ") does not contain expected template text. Expected: '" + expected + "', Found: '" + text + "'")
+                                );
+                            }
+                        } else {
                             isValid = false;
-                            result.addMessage("Glossary Validation", new ValidatorMessage("Incorrect localized text", "The localized text (" + language + ") '" + text + "' should be '" + localisationCHV1LocalisedText.get().getText() + "'"));
+                            result.addMessage("Glossary Validation",
+                                    ValidatorMessage.error("Incorrect localized text", "Title (" + language + ") has empty text where template expects content.")
+                            );
                         }
                     } else {
-                        isValid = false;
-                        result.addMessage("Glossary Validation", new ValidatorMessage("Missing translation", "No localized text found for language '" + language + "'"));
+                        // Extra language not defined by template -> WARNING (still consistent with "additions")
+                        result.addMessage("Glossary Validation",
+                                ValidatorMessage.warning("Template Addition", "Additional translation", "Additional title translation found for language '" + language + "': '" + text + "'", null)
+                        );
                     }
                 }
 
                 Optional<V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar.Inhalt.LocalisationCHV1MultilingualMText.LocalisedText.LocalisationCHV1LocalisedMText> localisationCHV1LocalisedMText;
 
-                // Check Content Translations
+                // --- Check Content Translations ---
                 List<Node> contentLocalisedTextNodes = xpath.getNodesList(glossary, "ed:Content/ed:LocalisedText");
                 for (Node localisedText : contentLocalisedTextNodes) {
                     String language = xpath.getString(localisedText, "ed:Language");
                     String text = xpath.getString(localisedText, "ed:Text");
 
-                    localisationCHV1LocalisedMText = existingGlossar.getInhalt().getLocalisationCHV1MultilingualMText().getLocalisedText().getLocalisationCHV1LocalisedMText()
+                    var expectedOpt = existingGlossar.getInhalt()
+                            .getLocalisationCHV1MultilingualMText()
+                            .getLocalisedText()
+                            .getLocalisationCHV1LocalisedMText()
                             .stream()
                             .filter(x -> x.getLanguage().equals(language))
                             .findFirst();
 
-                    if (localisationCHV1LocalisedMText.isPresent()) {
-                        if (!localisationCHV1LocalisedMText.get().getText().equals(text)) {
+                    if (expectedOpt.isPresent()) {
+                        String expected = expectedOpt.get().getText();
+
+                        if (expected != null && text != null) {
+                            if (text.equals(expected)) {
+                                // OK
+                            } else if (text.contains(expected)) {
+                                // Addition => WARNING
+                                String msg = "Content text contains template text but has additions (" + language + "). " + "Expected contained: '" + expected + "', Found: '" + text + "'";
+                                result.addMessage("Glossary Validation",
+                                        ValidatorMessage.warning("Template Addition", "Content text extended", msg, null)
+                                );
+                            } else {
+                                // Not contained => ERROR
+                                isValid = false;
+                                result.addMessage("Glossary Validation",
+                                        ValidatorMessage.error("Incorrect localized text", "Content (" + language + ") does not contain expected template text. Expected: '" + expected + "', Found: '" + text + "'")
+                                );
+                            }
+                        } else {
                             isValid = false;
-                            result.addMessage("Glossary Validation", new ValidatorMessage("Incorrect localized text", "The localized text (" + language + ") '" + text + "' should be '" + localisationCHV1LocalisedMText.get().getText() + "'"));
+                            result.addMessage("Glossary Validation",
+                                    ValidatorMessage.error("Incorrect localized text", "Content (" + language + ") has empty text where template expects content.")
+                            );
                         }
                     } else {
-                        isValid = false;
-                        result.addMessage("Glossary Validation", new ValidatorMessage("Missing translation", "No localized text found for language '" + language + "'"));
+                        // Extra language not defined by template -> WARNING
+                        result.addMessage("Glossary Validation",
+                                ValidatorMessage.warning("Template Addition", "Additional translation", "Additional content translation found for language '" + language + "': '" + text + "'", null)
+                        );
                     }
                 }
             }
 
+            // Missing template entries in extract -> still ERROR (unchanged)
             if (!glossars.isEmpty()) {
                 for (V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar glossar : glossars) {
                     String titleLanguage = glossar.getTitel().getLocalisationCHV1MultilingualText().getLocalisedText().getLocalisationCHV1LocalisedText().getFirst().getLanguage();
@@ -874,7 +1005,7 @@ public class GetExtractById extends Check {
 
                     String msg = "The federal glossary entry with title (" + titleLanguage + ") '" + title + "' is missing in the extract.";
                     result.addMessage("Glossary Validation",
-                            new ValidatorMessage("Metadata Mismatch", "Federal glossary", msg, null)
+                            ValidatorMessage.error("Metadata Mismatch", "Federal glossary", msg, null)
                     );
                 }
                 isValid = false;
@@ -893,7 +1024,7 @@ public class GetExtractById extends Check {
             List<Node> disclaimerNodes = xpath.getNodesList(doc, "//ed:Disclaimer");
 
             if (disclaimerNodes.isEmpty()) {
-                ValidatorMessage msg = new ValidatorMessage("Missing entries", "There are no entries for <Disclaimer>");
+                ValidatorMessage msg = ValidatorMessage.error("Missing entries", "There are no entries for <Disclaimer>");
                 result.addMessage("Disclaimer Validation", msg);
                 return false;
             }
@@ -942,11 +1073,11 @@ public class GetExtractById extends Check {
                     if (localisationCHV1LocalisedText.isPresent()) {
                         if (!localisationCHV1LocalisedText.get().getText().equals(text)) {
                             isValid = false;
-                            result.addMessage("Disclaimer Validation", new ValidatorMessage("Incorrect localized text", "The localized text '" + text + "' should be '" + localisationCHV1LocalisedText.get().getText() + "'"));
+                            result.addMessage("Disclaimer Validation", ValidatorMessage.error("Incorrect localized text", "The localized text '" + text + "' should be '" + localisationCHV1LocalisedText.get().getText() + "'"));
                         }
                     } else {
                         isValid = false;
-                        result.addMessage("Disclaimer Validation", new ValidatorMessage("Missing translation", "No localized text found for language '" + language + "'"));
+                        result.addMessage("Disclaimer Validation", ValidatorMessage.error("Missing translation", "No localized text found for language '" + language + "'"));
                     }
                 }
 
@@ -966,11 +1097,11 @@ public class GetExtractById extends Check {
                     if (localisationCHV1LocalisedMText.isPresent()) {
                         if (!localisationCHV1LocalisedMText.get().getText().equals(text)) {
                             isValid = false;
-                            result.addMessage("Disclaimer Validation", new ValidatorMessage("Incorrect localized text", "The localized text '" + text + "' should be '" + localisationCHV1LocalisedMText.get().getText() + "'"));
+                            result.addMessage("Disclaimer Validation", ValidatorMessage.error("Incorrect localized text", "The localized text '" + text + "' should be '" + localisationCHV1LocalisedMText.get().getText() + "'"));
                         }
                     } else {
                         isValid = false;
-                        result.addMessage("Disclaimer Validation", new ValidatorMessage("Missing translation", "No localized text found for language '" + language + "'"));
+                        result.addMessage("Disclaimer Validation", ValidatorMessage.error("Missing translation", "No localized text found for language '" + language + "'"));
                     }
                 }
             }
@@ -1002,7 +1133,7 @@ public class GetExtractById extends Check {
                 if (!isValid) {
                     allValid = false;
                     String msg = "UID '" + uid + "' is invalid according to BFS Public Services.";
-                    result.addMessage("Office Validation", new ValidatorMessage("Invalid UID", msg));
+                    result.addMessage("Office Validation", ValidatorMessage.error("Invalid UID", msg));
                     logger.debug(msg);
                 } else {
                     logger.trace("UID validated successfully: {}", uid);

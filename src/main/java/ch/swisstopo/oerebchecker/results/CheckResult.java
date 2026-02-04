@@ -1,5 +1,6 @@
 package ch.swisstopo.oerebchecker.results;
 
+import ch.swisstopo.oerebchecker.core.validation.MessageSeverity;
 import ch.swisstopo.oerebchecker.core.validation.ValidatorMessage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -52,6 +53,18 @@ public class CheckResult {
 
     public Map<String, List<ValidatorMessage>> getValidationMessages() {
         return validationMessages;
+    }
+
+    public int getWarningCount() {
+        return validationMessages.values().stream()
+                .flatMap(List::stream)
+                .filter(m -> m != null && m.Severity == MessageSeverity.WARNING)
+                .mapToInt(m -> 1)
+                .sum();
+    }
+
+    public boolean hasWarnings() {
+        return getWarningCount() > 0;
     }
 
     public void calculateResult() {

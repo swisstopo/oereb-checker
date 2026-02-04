@@ -8,6 +8,7 @@ import software.amazon.awssdk.utils.StringUtils;
 import java.io.IOException;
 import java.net.*;
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
 import java.util.List;
 import java.util.Map;
 
@@ -47,7 +48,7 @@ public class RequestHelper {
         return sharedClient;
     }
 
-    public static HttpClient getNewHttpClient() {
+    private static HttpClient getNewHttpClient() {
 
         HttpClient.Builder builder = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
@@ -120,6 +121,21 @@ public class RequestHelper {
             logger.error("createUrl error: Malformed URI '{}' or params: '{}'", urlString, requestParams);
         }
         return null;
+    }
+
+    private static String getUserAgent() {
+        return "Swisstopo-Oereb-Checker/1.0"; // "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36";
+    }
+
+    public static HttpRequest createRequest(URI uri) {
+        if (uri == null) {
+            throw new IllegalArgumentException("uri must not be null");
+        }
+        return HttpRequest.newBuilder()
+                .uri(uri)
+                // add more header information like this to not get blocked by the server
+                .header("User-Agent", getUserAgent())
+                .build();
     }
 
     /*

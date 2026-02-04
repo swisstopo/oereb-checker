@@ -21,14 +21,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class Check implements ICheck {
     protected static final Logger logger = LoggerFactory.getLogger(Check.class);
-    protected static final ReentrantLock capabilitiesLock = new ReentrantLock();
-    protected static final CountDownLatch capabilitiesLatch = new CountDownLatch(1);
 
     protected static final double maxImageAspectRatioPercentageDifference;
 
@@ -45,10 +40,6 @@ public abstract class Check implements ICheck {
     }
 
     protected XPathHelper xpath = new XPathHelper();
-
-    protected static boolean capabilitiesSyncComplete = false;
-    protected static List<String> getCapabilitiesTopicCodes = new CopyOnWriteArrayList<>();
-    protected static List<String> getCapabilitiesLanguages = new CopyOnWriteArrayList<>();
 
     protected String urlTemplate;
     protected List<ResponseFormat> supportedFormats;
@@ -105,7 +96,7 @@ public abstract class Check implements ICheck {
 
         try {
             HttpClient client = RequestHelper.getSharedHttpClient();
-            HttpRequest request = HttpRequest.newBuilder().uri(uri).build();
+            HttpRequest request = RequestHelper.createRequest(uri);
             HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
 
             try (InputStream is = response.body()) {
@@ -150,14 +141,14 @@ public abstract class Check implements ICheck {
             result.StatusCodeCorrect = true;
         } else {
             result.addMessage("Protocol Validation",
-                    new ValidatorMessage("HTTP Protocol", "Status Code", "Expected " + responseStatusCode + ", but found " + result.StatusCode, "")
+                    ValidatorMessage.error("HTTP Protocol", "Status Code", "Expected " + responseStatusCode + ", but found " + result.StatusCode, "")
             );
         }
 
         if (result.StatusCode == ResponseStatusCode.SEE_OTHER && responseFormat != ResponseFormat.url) {
             result.StatusCodeCorrect = false;
             result.addMessage("Protocol Validation",
-                    new ValidatorMessage("HTTP Protocol", "Redirect", "Unexpected redirect (303) for non-URL format request.", "")
+                    ValidatorMessage.error("HTTP Protocol", "Redirect", "Unexpected redirect (303) for non-URL format request.", "")
             );
         }
 
@@ -194,7 +185,7 @@ public abstract class Check implements ICheck {
 
                 if (result.ContentTypeCorrect != null && !result.ContentTypeCorrect) {
                     result.addMessage("Protocol Validation",
-                            new ValidatorMessage("HTTP Protocol", "Content-Type", "Unexpected Content-Type: " + result.ContentType + " for format: " + responseFormat, "")
+                            ValidatorMessage.error("HTTP Protocol", "Content-Type", "Unexpected Content-Type: " + result.ContentType + " for format: " + responseFormat, "")
                     );
                 }
             }

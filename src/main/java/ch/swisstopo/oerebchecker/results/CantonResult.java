@@ -1,5 +1,6 @@
 package ch.swisstopo.oerebchecker.results;
 
+import ch.swisstopo.oerebchecker.core.validation.MessageSeverity;
 import ch.swisstopo.oerebchecker.core.validation.ValidatorMessage;
 import ch.swisstopo.oerebchecker.models.Canton;
 import com.google.gson.Gson;
@@ -36,6 +37,18 @@ public class CantonResult {
     public void addCheckResult(CheckResult checkResult) {
         checkResult.calculateResult();
         results.add(checkResult);
+    }
+
+    public int getTotalCount() {
+        return results.size();
+    }
+
+    public int getSuccessfulCount() {
+        return (int) results.stream().filter(r -> r.Successful).count();
+    }
+
+    public int getWarningCount() {
+        return results.stream().mapToInt(CheckResult::getWarningCount).sum();
     }
 
     public String getAsJsonString() {
@@ -82,11 +95,11 @@ public class CantonResult {
             for (Map.Entry<String, List<ValidatorMessage>> entry : result.getValidationMessages().entrySet()) {
                 String category = entry.getKey();
                 List<ValidatorMessage> messages = entry.getValue();
-                appendErrorDetails(html, category, messages);
+                appendMessagesBySeverity(html, category, messages);
             }
 
             if (result.ErrorMessage != null) {
-                appendErrorDetails(html, "System Error", List.of(new ValidatorMessage("Critical", result.ErrorMessage)));
+                appendMessagesBySeverity(html, "System Error", List.of(ValidatorMessage.error("Critical", result.ErrorMessage)));
             }
 
             html.append("</div>"); // End card-body
@@ -105,19 +118,37 @@ public class CantonResult {
         sb.append("<div class='flag'><span style='color:").append(color).append("'>●</span> ").append(label).append("</div>");
     }
 
-    private void appendErrorDetails(StringBuilder sb, String title, List<ValidatorMessage> messages) {
+    private void appendMessagesBySeverity(StringBuilder sb, String category, List<ValidatorMessage> messages) {
         if (messages == null || messages.isEmpty()) {
             return;
         }
-        sb.append("<details class='error-details'>");
+
+        List<ValidatorMessage> errors = messages.stream()
+                .filter(m -> m != null && m.Severity == MessageSeverity.ERROR)
+                .toList();
+
+        List<ValidatorMessage> warnings = messages.stream()
+                .filter(m -> m != null && m.Severity == MessageSeverity.WARNING)
+                .toList();
+
+        appendDetails(sb, category + " - Errors", errors, "error-details");
+        appendDetails(sb, category + " - Warnings", warnings, "warning-details");
+    }
+
+    private void appendDetails(StringBuilder sb, String title, List<ValidatorMessage> messages, String cssClass) {
+        if (messages == null || messages.isEmpty()) {
+            return;
+        }
+
+        sb.append("<details class='").append(cssClass).append("'>");
         sb.append("<summary>").append(title).append(" (").append(messages.size()).append(")</summary>");
         sb.append("<ul>");
         for (ValidatorMessage msg : messages) {
-            sb
-                    .append("<li><strong>")
-                    .append(StringUtils.isNotBlank(msg.Rule) ? msg.Rule : "Error")
+            sb.append("<li><strong>")
+                    .append(StringUtils.isNotBlank(msg.Rule) ? msg.Rule : (cssClass.equals("warning-details") ? "Warning" : "Error"))
                     .append(":</strong> ")
-                    .append(msg.Message).append(StringUtils.isNotBlank(msg.Error) ? (" - " + msg.Error) : "")
+                    .append(msg.Message)
+                    .append(StringUtils.isNotBlank(msg.Error) ? (" - " + msg.Error) : "")
                     .append("</li>");
         }
         sb.append("</ul></details>");

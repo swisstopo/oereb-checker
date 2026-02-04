@@ -1,0 +1,307 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.4;
+    color: #333;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 10px 2%; /* 2% side margins for full-width feel */
+}
+
+.report-wrapper {
+    max-width: 100%; /* Changed from 1100px to full width */
+    background: #fff;
+    padding: 15px 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 4px;
+}
+
+header {
+    border-bottom: 1px solid #eee;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+}
+
+/* Header with left + centered title + right logo */
+.header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.header-logo {
+    height: 50px;
+    width: auto;
+    max-width: 250px;
+    object-fit: contain;
+    display: block;
+}
+
+/* --- OEREB logo sprite cropping (language slices) ---
+   Sprite: 1925x196
+   DE: 715x196 (x=0)
+   FR: 605x196 (x=715)        (assumption: remaining 1210 split evenly)
+   IT: 605x196 (x=1320)
+*/
+.oereb-logo-viewport {
+    height: 50px;        /* must match .header-logo height */
+    overflow: hidden;
+    display: block;
+}
+
+.oereb-logo-sprite {
+    height: 100%;
+    width: auto;         /* keep original sprite ratio (1925x196) */
+    display: block;
+    transform: translateX(0);
+}
+
+/* Desktop (50px high) */
+body.lang-de .oereb-logo-viewport { width: 182.4px; }  /* 715*(50/196) */
+body.lang-fr .oereb-logo-viewport { width: 154.3px; }  /* 605*(50/196) */
+body.lang-it .oereb-logo-viewport { width: 154.3px; }  /* 605*(50/196) */
+
+body.lang-de .oereb-logo-sprite { transform: translateX(0); }
+body.lang-fr .oereb-logo-sprite { transform: translateX(-182.4px); } /* -715*(50/196) */
+body.lang-it .oereb-logo-sprite { transform: translateX(-336.7px); } /* -(715+605)*(50/196) */
+
+/* --- Mobile header improvements --- */
+@media (max-width: 600px) {
+    .header-bar {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px 12px;
+    }
+
+    .header-logo {
+        height: 22px;     /* slightly smaller on mobile */
+        max-width: 45%;
+    }
+
+    .oereb-logo-viewport {
+        height: 22px;
+    }
+
+    /* Mobile (22px high) */
+    body.lang-de .oereb-logo-viewport { width: 80.2px; }  /* 715*(22/196) */
+    body.lang-fr .oereb-logo-viewport { width: 67.9px; }  /* 605*(22/196) */
+    body.lang-it .oereb-logo-viewport { width: 67.9px; }  /* 605*(22/196) */
+
+    body.lang-de .oereb-logo-sprite { transform: translateX(0); }
+    body.lang-fr .oereb-logo-sprite { transform: translateX(-80.2px); }  /* -715*(22/196) */
+    body.lang-it .oereb-logo-sprite { transform: translateX(-148.2px); } /* -(715+605)*(22/196) */
+
+    h1 {
+        flex: 0 0 100%;
+        font-size: 1.2em;
+        order: 2;
+    }
+
+    .header-logo-left { order: 1; }
+    .header-logo-right { order: 3; }
+}
+
+h1 {
+    color: #2c3e50;
+    margin: 0;
+    font-size: 1.5em; /* Smaller title */
+    text-align: center;
+    flex: 1;          /* keeps title centered between the two images */
+}
+
+.meta {
+    color: #7f8c8d;
+    font-size: 0.85em;
+    margin-bottom: 10px;
+}
+
+/* Canton Section Styling */
+.canton-section {
+    margin-bottom: 10px; /* Tighter spacing between cantons */
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.canton-section.disabled {
+    opacity: 0.5;
+    border-color: #eee;
+    background-color: #fafafa;
+    cursor: not-allowed;
+    pointer-events: none; /* User cannot click/expand */
+}
+
+.summary-mock {
+    padding: 8px 15px;
+    background: #bdc3c7; /* Gray background for pending items */
+    color: #7f8c8d;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 6px solid #dcdde1;
+}
+
+.canton-section.disabled .canton-stats {
+    background: rgba(0, 0, 0, 0.05);
+    color: #7f8c8d;
+}
+
+.canton-section summary {
+    padding: 8px 15px; /* Thinner header bar */
+    cursor: pointer;
+    background: #2c3e50;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    list-style: none;
+    outline: none;
+}
+
+.canton-section summary::-webkit-details-marker { display: none; }
+
+.canton-section.all-success summary { border-left: 6px solid #28a745; }
+.canton-section.has-failures summary { border-left: 6px solid #dc3545; }
+.canton-section.has-failures .error-details summary { border-left: 6px solid #dc3545; }
+.canton-section.has-failures .warning-details summary { border-left: 6px solid #f0ad4e; }
+.canton-section.has-warnings summary { border-left: 6px solid #f0ad4e; }
+.canton-section.has-warnings .warning-details summary { border-left: 6px solid #f0ad4e; }
+
+.canton-title { font-size: 1.1em; }
+
+.canton-stats {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.85em;
+}
+
+.canton-result-container {
+    padding: 10px 15px; /* Reduced padding inside expanded area */
+    background: #fdfdfd;
+}
+
+/* Individual Check Card Styles */
+.check-card {
+    border-radius: 4px;
+    margin-bottom: 8px;
+    border: 1px solid #eee;
+    background: #fff; /* Ensure white background */
+}
+
+.check-card.success { border-left: 4px solid #28a745; }
+.check-card.failure { border-left: 4px solid #dc3545; }
+
+.card-header {
+    background: #fcfcfc;
+    padding: 6px 12px; /* Thinner card headers */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.status-icon { font-size: 1.1em; }
+
+.url {
+    flex-grow: 1;
+    font-size: 0.9em;
+    font-family: 'Consolas', monospace;
+}
+
+.badge {
+    padding: 2px 6px;
+    font-size: 0.75em;
+}
+
+/* Validation Flags Grid */
+.validation-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* Thinner columns */
+    gap: 5px;
+    padding: 8px 12px;
+}
+
+.flag {
+    font-size: 0.8em;
+}
+
+/* Collapsible Error Messages */
+.error-details {
+    margin: 5px 12px 10px 12px;
+    font-size: 0.85em;
+    border: 1px solid #ffcccc; /* Clear red border for errors */
+    border-radius: 4px;
+    background-color: #fff0f0; /* Light red background */
+}
+
+.error-details summary {
+    padding: 6px 10px;
+    color: #c0392b;
+    background-color: #feebeb; /* Distinct header color for the error section */
+    cursor: pointer;
+    font-weight: bold;
+    display: list-item;
+    border-bottom: 1px solid transparent;
+}
+
+.error-details[open] summary {
+    border-bottom: 1px solid #ffcccc; /* Line between summary and list when open */
+}
+
+.error-details summary:hover {
+    background-color: #fdd;
+}
+
+.error-details ul {
+    margin: 0;
+    padding: 8px 10px 8px 30px;
+    list-style-type: square;
+}
+
+.error-details li {
+    margin-bottom: 3px;
+    color: #721c24;
+}
+
+/* Warnings */
+.warning-details {
+    margin: 5px 12px 10px 12px;
+    font-size: 0.85em;
+    border: 1px solid #ffe08a;
+    border-radius: 4px;
+    background-color: #fff8e1;
+}
+
+.warning-details summary {
+    padding: 6px 10px;
+    color: #8a6d00;
+    background-color: #fff2bf;
+    cursor: pointer;
+    font-weight: bold;
+    display: list-item;
+    border-bottom: 1px solid transparent;
+}
+
+.warning-details[open] summary {
+    border-bottom: 1px solid #ffe08a;
+}
+
+.warning-details summary:hover {
+    background-color: #ffec99; /* similar hover behavior to errors */
+}
+
+.warning-details ul {
+    margin: 0;
+    padding: 8px 10px 8px 30px;
+    list-style-type: square;
+}
+
+.warning-details li {
+    margin-bottom: 3px;
+    color: #6b5500;
+}
+
+footer {
+    margin-top: 20px;
+    font-size: 0.75em;
+}
