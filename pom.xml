@@ -209,7 +209,8 @@
                         <configuration>
                             <wsdlDirectory>src/main/resources/ch/swisstopo/bfs</wsdlDirectory>
                             <wsdlFiles>
-                                <wsdlFile>www.uid-wse.admin.ch_V5.0_PublicServices.svc_wsdl.xml</wsdlFile>
+                                <wsdlFile>Prod_PartnerServices.svc.wsdl</wsdlFile>
+                                <wsdlFile>Prod_PublicServices.svc.wsdl</wsdlFile>
                             </wsdlFiles>
                             <packageName>ch.swisstopo.oerebchecker.utils.uid</packageName>
                             <sourceDestDir>${project.build.directory}/generated-sources/wsimport</sourceDestDir>

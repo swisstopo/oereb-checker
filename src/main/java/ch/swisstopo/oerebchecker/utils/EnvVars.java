@@ -11,6 +11,9 @@ public final class EnvVars {
     public static final String S3_RESULTS_BUCKET = "RESULTS_BUCKET";
     public static final String S3_RESULTS_OUTPUT_PATH = "S3ResultOutputPath";
 
+    public static final String BFS_UID_PARTNER_LOGIN = "BFS_UID_PARTNER_LOGIN";
+    public static final String BFS_UID_PARTNER_PASSWORD = "BFS_UID_PARTNER_PASSWORD";
+
     public static final String MAX_IMAGE_ASPECT_RATIO_PERCENTAGE_DIFFERENCE = "MaxImageAspectRatioPercentageDifference";
 
     public static final String OUTPUT_PATH = "OUTPUT_PATH";
