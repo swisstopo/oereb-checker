@@ -5,13 +5,10 @@
                        https://logging.apache.org/xml/ns
                        https://logging.apache.org/xml/ns/log4j-config-2.xsd">
 
-    <!-- Local development config: logs to file and console -->
-    <!-- For Lambda builds use: mvn package -Plambda -->
+    <!-- Lambda config: console only (Lambda filesystem is read-only except /tmp) -->
+    <!-- Activated via: mvn package -Plambda -->
     <Appenders>
-        <File name="File" fileName="out/logs/oerebchecker.log">
-            <PatternLayout pattern="[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%X{canton}] [%t] %c{1}:%L - %msg%n"/>
-        </File>
-        <Console name="Console">
+        <Console name="LambdaConsole">
             <PatternLayout pattern="[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%X{canton}] [%t] %c{1}:%L - %msg%n"/>
         </Console>
     </Appenders>
@@ -19,8 +16,7 @@
     <Loggers>
         <Logger name="org.verapdf" level="ERROR"/>
         <Root level="INFO">
-            <AppenderRef ref="File"/>
-            <AppenderRef ref="Console"/>
+            <AppenderRef ref="LambdaConsole"/>
         </Root>
     </Loggers>
 
