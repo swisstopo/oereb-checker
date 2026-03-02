@@ -136,7 +136,7 @@ public class Validator {
         List<PDFAFlavour> flavours = new LinkedList<>();
         flavours.add(PDFAFlavour.PDFA_1_A);
         flavours.add(PDFAFlavour.PDFA_1_B);
-        // flavours.add(PDFAFlavour.PDFA_2_A);
+        flavours.add(PDFAFlavour.PDFA_2_A);
 
         try (VeraPDFFoundry foundry = Foundries.defaultInstance();
              PDFAParser parser = foundry.createParser(inputStream);

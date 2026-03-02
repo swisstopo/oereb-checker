@@ -25,7 +25,7 @@ public abstract class CheckConfig {
                 Object value = field.get(this);
                 Object defaultValue = field.get(defaultInstance);
 
-                // Only log if value is not null, differs from default, and is not "empty"
+                // Only log if the value is not null, differs from default, and is not "empty"
                 if (value != null && !Objects.deepEquals(value, defaultValue) && !isEmpty(value)) {
                     joiner.add(field.getName() + "=" + value);
                 }

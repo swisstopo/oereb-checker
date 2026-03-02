@@ -23,9 +23,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 public class OerebChecker {
     private static final Logger logger = LoggerFactory.getLogger(OerebChecker.class);
@@ -55,27 +57,28 @@ public class OerebChecker {
         // 1. Initialize Storage
         S3StorageProvider.createFromEnv(EnvVars.S3_RESULTS_BUCKET).ifPresent(provider -> {
             storageProvider = provider;
-            logger.info("S3 Results Storage initialized.");
+            logger.info("S3 results storage initialized.");
         });
 
         // 2. Load Config
-        boolean localConfigLoaded = ConfigManager.loadConfigs(cli);
+        ConfigManager configManager = new ConfigManager();
+        boolean localConfigLoaded = configManager.loadConfigsFromLocal(cli);
 
         if (!localConfigLoaded) {
             String s3Key = cli.getKey();
             if (s3Key != null) {
                 logger.debug("Local config not found, attempting to load from S3 via key: {}", s3Key);
-                S3StorageProvider.createFromEnv(EnvVars.S3_SCRIPTS_BUCKET).ifPresent(provider -> {
-                    ConfigManager.loadConfigFromS3(provider, s3Key);
-                });
+                S3StorageProvider.createFromEnv(EnvVars.S3_SCRIPTS_BUCKET)
+                        .ifPresent(provider -> configManager.loadConfigFromS3(provider, s3Key));
             } else {
                 // Fallback: try loading from SCRIPTS_BUCKET with S3Config env var
                 logger.debug("Local config not found and no S3 key provided, attempting fallback to SCRIPTS_BUCKET...");
-                S3StorageProvider.createFromEnv(EnvVars.S3_SCRIPTS_BUCKET).ifPresent(ConfigManager::loadConfigs);
+                S3StorageProvider.createFromEnv(EnvVars.S3_SCRIPTS_BUCKET)
+                        .ifPresent(configManager::loadConfigsFromS3);
             }
         }
 
-        if (ConfigManager.getCantonConfigs().isEmpty()) {
+        if (configManager.getCantonConfigs().isEmpty()) {
             throw new RuntimeException("Application configuration is empty or could not be parsed. Please check your config source.");
         }
 
@@ -83,17 +86,14 @@ public class OerebChecker {
         MetadataManager.loadMetadata();
 
         // 4. Execution Loop
-        for (Canton canton : ConfigManager.getCantonConfigs().keySet()) {
-            processCanton(canton);
-        }
+        configManager.getCantonConfigs().forEach(OerebChecker::processCanton);
 
-        logger.info("All checks completed successfully.");
+        logger.info("All checks completed.");
     }
 
-    private static void processCanton(Canton canton) {
+    private static void processCanton(Canton canton, CantonConfig config) {
 
-        var config = ConfigManager.getCantonConfigs().get(canton);
-        logger.trace("Processing Canton: {} with base URL: {}", canton, config.BasicUrl);
+        logger.trace("Processing Canton: {} (cantonConfig={})", canton, config.toString());
 
         // Proxy Settings
         if (StringUtils.isNotBlank(config.ProxyHostname)) {
@@ -153,7 +153,7 @@ public class OerebChecker {
 
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-            CantonResult result = new CantonResult(canton);
+            CantonResult result = new CantonResult(canton, config.toString());
 
             futures.forEach(f -> {
                 try {
@@ -162,6 +162,26 @@ public class OerebChecker {
                     logger.error("Check failed", e);
                 }
             });
+
+            Map<CheckStatus, Long> byStatus = result.getResults().stream()
+                    .collect(Collectors.groupingBy(
+                        r -> r.ExecutionStatus != null ? r.ExecutionStatus : CheckStatus.NOT_STARTED,
+                        Collectors.counting()
+                    ));
+
+            long executed = byStatus.getOrDefault(CheckStatus.EXECUTED, 0L);
+            long skipped = byStatus.getOrDefault(CheckStatus.SKIPPED, 0L);
+            long failed = byStatus.getOrDefault(CheckStatus.FAILED, 0L);
+
+            logger.info("Canton {} summary: total={}, executed={}, successful={}, warnings={}, skipped={}, failed={}",
+                    canton,
+                    result.getResults().size(),
+                    executed,
+                    result.getSuccessfulCount(),
+                    result.getWarningCount(),
+                    skipped,
+                    failed
+            );
 
             Path outputDirectoryPath = getOutputDirectoryPath(config);
             logger.info("Finalizing Canton {}. Writing results to {} via provider {}", canton, outputDirectoryPath, storageProvider.getClass().getSimpleName());

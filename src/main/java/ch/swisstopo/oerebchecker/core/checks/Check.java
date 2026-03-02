@@ -9,6 +9,8 @@ import ch.swisstopo.oerebchecker.core.validation.Validator;
 import ch.swisstopo.oerebchecker.utils.EnvVars;
 import ch.swisstopo.oerebchecker.utils.RequestHelper;
 import ch.swisstopo.oerebchecker.utils.XPathHelper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -42,6 +44,9 @@ public abstract class Check implements ICheck {
 
     protected XPathHelper xpath = new XPathHelper();
 
+    protected String cannotRunReasonCode = null;
+    protected String cannotRunReasonMessage = null;
+
     protected String urlTemplate;
     protected List<ResponseFormat> supportedFormats;
 
@@ -55,24 +60,32 @@ public abstract class Check implements ICheck {
 
     private Document document = null;
 
-    protected CheckResult result = null;
+    protected CheckResult result = new CheckResult();
 
+    protected void setCannotRunReason(String code, String message) {
+        this.cannotRunReasonCode = code;
+        this.cannotRunReasonMessage = message;
+
+        logger.error(message);
+    }
 
     protected boolean validateConfig(CheckConfig config) {
 
+        result.ConfigInfo = (config != null ? config.toString() : null);
+
         if (config == null || !config.isValid()) {
-            logger.error("Configuration is missing or invalid");
+            setCannotRunReason("CONFIG_INVALID", "Configuration is missing or invalid.");
             return false;
         }
 
         try {
             responseFormat = ResponseFormat.valueOf(config.FORMAT);
             if (!supportedFormats.contains(responseFormat)) {
-                logger.error("Unsupported response format: '{}'", config.FORMAT);
+                setCannotRunReason("UNSUPPORTED_FORMAT","Unsupported response format: '" + config.FORMAT + "'.");
                 return false;
             }
         } catch (IllegalArgumentException e) {
-            logger.error("Invalid format: {}", config.FORMAT);
+            setCannotRunReason("INVALID_FORMAT", "Invalid format: '" + config.FORMAT + "'.");
             return false;
         }
 
@@ -90,11 +103,40 @@ public abstract class Check implements ICheck {
 
     public CheckResult run() {
         if (!canRun) {
-            logger.trace("Check cannot run: canRun is false for URI {}", uri);
-            return null;
-        }
-        logger.info("Start: {}", uri);
+            if (cannotRunReasonCode == null && cannotRunReasonMessage == null) {
+                if (uri == null) {
+                    setCannotRunReason("URI_BUILD_FAILED", "Check could not be executed because no valid request URI was created (check configuration/parameters).");
+                } else {
+                    setCannotRunReason("CANNOT_RUN", "Check could not be executed (canRun=false).");
+                }
+            }
 
+            result.ExecutionStatus = CheckStatus.SKIPPED;
+            result.NotExecutedReasonCode = cannotRunReasonCode;
+            result.NotExecutedReason = cannotRunReasonMessage;
+
+            String reasonText = StringUtils.isNotBlank(result.NotExecutedReason) ? result.NotExecutedReason : "No reason message was provided.";
+
+            result.addMessage("Execution",
+                ValidatorMessage.error(
+                    "Execution",
+                    "CHECK_SKIPPED",
+                    "Check was skipped. Reason: " + reasonText,
+                    (uri != null ? uri.toString() : result.Url),
+                    result.NotExecutedReasonCode
+                )
+            );
+
+            logger.trace(
+                    "Check skipped: {} ({}); checkConfig={}",
+                    result.NotExecutedReason,
+                    result.NotExecutedReasonCode,
+                    result.ConfigInfo
+            );
+            return result;
+        }
+
+        logger.info("Start: {} (checkConfig={})", uri, result.ConfigInfo);
         try {
             HttpClient client = RequestHelper.getSharedHttpClient();
             HttpRequest request = RequestHelper.createRequest(uri);
@@ -105,23 +147,42 @@ public abstract class Check implements ICheck {
             }
             postProcess();
 
+            result.ExecutionStatus = CheckStatus.EXECUTED;
+
         } catch (Exception e) {
-            if (result != null) {
-                if (e instanceof IOException ioe && ioe.getMessage() != null && ioe.getMessage().equals("unexpected content length header with 204 response")) {
-                    result.StatusCode = ResponseStatusCode.NO_CONTENT;
-                    result.StatusCodeCorrect = responseStatusCode == ResponseStatusCode.NO_CONTENT;
-                    result.ContentTypeCorrect = null; // because no content-type needed
-                } else {
-                    result.HasError = true;
-                    result.ErrorMessage = e.getMessage();
-                    logger.error("Check failed for {}: {}", uri, e.getMessage(), e);
-                }
+            if (e instanceof IOException ioe &&
+                    ioe.getMessage() != null &&
+                    ioe.getMessage().equals("unexpected content length header with 204 response")) {
+
+                result.StatusCode = ResponseStatusCode.NO_CONTENT;
+                result.StatusCodeCorrect = responseStatusCode == ResponseStatusCode.NO_CONTENT;
+                result.ContentTypeCorrect = null; // because no content-type needed
+
+                result.ExecutionStatus = CheckStatus.EXECUTED;
+
             } else {
+                result.ExecutionStatus = CheckStatus.FAILED;
+                result.ExceptionType = e.getClass().getName();
+                result.ExceptionMessage = e.getMessage();
+
+                result.HasError = true;
+                result.ErrorMessage = e.getMessage();
+
+                result.addMessage("Execution",
+                    ValidatorMessage.error(
+                        "Execution",
+                        "CHECK_EXECUTION_EXCEPTION",
+                        "Check execution failed due to an unexpected exception.",
+                        (uri != null ? uri.toString() : result.Url),
+                        (result.ExceptionType != null ? result.ExceptionType + ": " : "") + result.ExceptionMessage
+                    )
+                );
+
                 logger.error("Check failed for {}: {}", uri, e.getMessage(), e);
             }
         }
 
-        logger.info("Done:  {}", uri);
+        logger.info("Done:  {} (checkConfig={})", uri, result.ConfigInfo);
         return result;
     }
 
@@ -142,14 +203,26 @@ public abstract class Check implements ICheck {
             result.StatusCodeCorrect = true;
         } else {
             result.addMessage("Protocol Validation",
-                    ValidatorMessage.error("HTTP Protocol", "Status Code", "Expected " + responseStatusCode + ", but found " + result.StatusCode, "")
+                ValidatorMessage.error(
+                    "HTTP Protocol",
+                    "HTTP_STATUS_UNEXPECTED",
+                    "Unexpected HTTP status. Expected " + responseStatusCode + ", but received " + result.StatusCode + ".",
+                    result.Url,
+                    null
+                )
             );
         }
 
         if (result.StatusCode == ResponseStatusCode.SEE_OTHER && responseFormat != ResponseFormat.url) {
             result.StatusCodeCorrect = false;
             result.addMessage("Protocol Validation",
-                    ValidatorMessage.error("HTTP Protocol", "Redirect", "Unexpected redirect (303) for non-URL format request.", "")
+                ValidatorMessage.error(
+                    "HTTP Protocol",
+                    "HTTP_REDIRECT_UNEXPECTED",
+                    "Unexpected redirect (HTTP 303) for a non-URL format request.",
+                    result.Url,
+                    null
+                )
             );
         }
 
@@ -164,7 +237,7 @@ public abstract class Check implements ICheck {
                     result.ContentTypeCorrect = null;
                     logger.trace("Content-Type check is skipped to be not to strict for redirect response");
 
-                } else if (provoke500 && result.StatusCode == ResponseStatusCode.INTERNAL_SERVER_ERROR) {
+                } else if (provoke500) {
                     result.ContentTypeCorrect = null;
                     logger.trace("Content-Type check is skipped to be not to strict for 'provoke500' response");
 
@@ -186,7 +259,13 @@ public abstract class Check implements ICheck {
 
                 if (result.ContentTypeCorrect != null && !result.ContentTypeCorrect) {
                     result.addMessage("Protocol Validation",
-                            ValidatorMessage.error("HTTP Protocol", "Content-Type", "Unexpected Content-Type: " + result.ContentType + " for format: " + responseFormat, "")
+                            ValidatorMessage.error(
+                                    "HTTP Protocol",
+                                    "HTTP_CONTENT_TYPE_UNEXPECTED",
+                                    "Unexpected Content-Type '" + result.ContentType + "' for requested format '" + responseFormat + "'.",
+                                    result.Url,
+                                    null
+                            )
                     );
                 }
             }
@@ -231,5 +310,16 @@ public abstract class Check implements ICheck {
 
     // Hook for child classes to do extra work after validation (like parsing XML)
     protected void postProcess() {
+    }
+
+    @Override
+    public String toString() {
+
+        Gson gson = new GsonBuilder()
+                .disableHtmlEscaping()
+                //.setPrettyPrinting()
+                .create();
+
+        return gson.toJson(this);
     }
 }

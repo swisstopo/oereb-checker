@@ -27,14 +27,15 @@ import java.util.stream.Stream;
 public class ConfigManager {
     private static final Logger logger = LoggerFactory.getLogger(ConfigManager.class);
 
-    private static Path configFilePath;
-    private static final Map<Canton, CantonConfig> cantonConfigs = new Hashtable<>();
+    private Path configFilePath;
+    private final Map<Canton, CantonConfig> cantonConfigs = new Hashtable<>();
 
-    public static Map<Canton, CantonConfig> getCantonConfigs() {
+    public Map<Canton, CantonConfig> getCantonConfigs() {
         return cantonConfigs;
     }
 
-    public static void loadConfigs(S3StorageProvider storageProvider) {
+
+    public void loadConfigsFromS3(S3StorageProvider storageProvider) {
 
         String configFilePathString = System.getenv(EnvVars.S3_SCRIPTS_CONFIG_KEY);
 
@@ -45,7 +46,7 @@ public class ConfigManager {
         }
     }
 
-    public static void loadConfigFromS3(S3StorageProvider storageProvider, String key) {
+    public void loadConfigFromS3(S3StorageProvider storageProvider, String key) {
         configFilePath = Paths.get(key);
         byte[] cantonConfigData = storageProvider.readObject(configFilePath);
         CantonConfig cantonConfig = getCantonConfig(configFilePath, cantonConfigData);
@@ -55,7 +56,7 @@ public class ConfigManager {
         }
     }
 
-    public static boolean loadConfigs(CliParser cli) {
+    public boolean loadConfigsFromLocal(CliParser cli) {
 
         String configFilePathString = cli.getConfigFilePath();
 
@@ -192,7 +193,7 @@ public class ConfigManager {
         return false;
     }
 
-    private static Canton getCantonFromConfigOrPath(CantonConfig cantonConfig, Path configFilePath) {
+    private Canton getCantonFromConfigOrPath(CantonConfig cantonConfig, Path configFilePath) {
 
         if (!StringUtils.isBlank(cantonConfig.Canton)) {
             try {
@@ -211,7 +212,7 @@ public class ConfigManager {
         }
     }
 
-    private static CantonConfig getCantonConfig(Path configFilePath, byte[] cantonConfigData) {
+    private CantonConfig getCantonConfig(Path configFilePath, byte[] cantonConfigData) {
 
         if (cantonConfigData != null) {
             String configContent = new String(cantonConfigData, StandardCharsets.UTF_8);

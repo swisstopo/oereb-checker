@@ -1,7 +1,6 @@
 package ch.swisstopo.oerebchecker.manager;
 
 import ch.swisstopo.oerebchecker.models.Canton;
-import ch.swisstopo.oerebchecker.results.CheckResult;
 import ch.swisstopo.oerebchecker.storage.IStorageProvider;
 import ch.swisstopo.oerebchecker.results.CantonResult;
 import ch.swisstopo.oerebchecker.utils.ResourceHelper;
@@ -21,7 +20,8 @@ public class ResultManager {
     private static final String RESULT_HTML_RESOURCE = "ch/swisstopo/oerebchecker/result.html";
     private static final String TEMPLATE_VERSION_META = "oerebchecker-template-version";
 
-    private record TemplateReadResult(Document document, boolean templateUpgraded) {}
+    private record TemplateReadResult(Document document, boolean templateUpgraded) {
+    }
 
     public static void write(IStorageProvider storage, Path outputDirectoryPath, CantonResult cantonResult) {
         Path outputHtmlFilePath = outputDirectoryPath.resolve("result.html");
@@ -45,9 +45,10 @@ public class ResultManager {
             int total = cantonResult.getTotalCount();
             int successful = cantonResult.getSuccessfulCount();
             int warningCount = cantonResult.getWarningCount();
+            int errorCount = cantonResult.getErrorCount();
 
             String statusClass;
-            if (successful != total) {
+            if (successful != total || errorCount > 0) {
                 statusClass = "has-failures";
             } else if (warningCount > 0) {
                 statusClass = "has-warnings";
@@ -62,10 +63,21 @@ public class ResultManager {
             Element summary = new Element("summary");
             summary.append("<span class='canton-title'>Canton: " + cantonResult.getCanton() + "</span>");
 
-            String stats = successful + " / " + total + " successful";
+            String stats = "";
             if (warningCount > 0) {
-                stats += " | Warnings: " + warningCount;
+                stats += "Warnings: " + warningCount;
             }
+            if (errorCount > 0) {
+                if (!stats.isEmpty()) {
+                    stats += " | ";
+                }
+                stats += "Errors: " + errorCount;
+            }
+            if (!stats.isEmpty()) {
+                stats += " | ";
+            }
+            stats += "Checks " + successful + " / " + total + " successful";
+
             summary.append("<span class='canton-stats'>" + stats + "</span>");
 
             details.appendChild(summary);
@@ -108,7 +120,7 @@ public class ResultManager {
             return null;
         }
 
-        byte[] chosenBytes = null;
+        byte[] chosenBytes;
         boolean templateUpgraded = false;
 
         byte[] storedBytes = null;

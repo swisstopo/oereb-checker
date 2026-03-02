@@ -11,7 +11,7 @@ body {
     max-width: 100%; /* Changed from 1100px to full width */
     background: #fff;
     padding: 15px 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     border-radius: 4px;
 }
 
@@ -44,26 +44,49 @@ header {
    IT: 605x196 (x=1320)
 */
 .oereb-logo-viewport {
-    height: 50px;        /* must match .header-logo height */
+    height: 50px; /* must match .header-logo height */
     overflow: hidden;
     display: block;
 }
 
 .oereb-logo-sprite {
     height: 100%;
-    width: auto;         /* keep original sprite ratio (1925x196) */
+    width: auto; /* keep original sprite ratio (1925x196) */
     display: block;
     transform: translateX(0);
 }
 
 /* Desktop (50px high) */
-body.lang-de .oereb-logo-viewport { width: 182.4px; }  /* 715*(50/196) */
-body.lang-fr .oereb-logo-viewport { width: 154.3px; }  /* 605*(50/196) */
-body.lang-it .oereb-logo-viewport { width: 154.3px; }  /* 605*(50/196) */
+body.lang-de .oereb-logo-viewport {
+    width: 182px;
+}
 
-body.lang-de .oereb-logo-sprite { transform: translateX(0); }
-body.lang-fr .oereb-logo-sprite { transform: translateX(-182.4px); } /* -715*(50/196) */
-body.lang-it .oereb-logo-sprite { transform: translateX(-336.7px); } /* -(715+605)*(50/196) */
+/* 715*(50/196) */
+body.lang-fr .oereb-logo-viewport {
+    width: 154px;
+}
+
+/* 605*(50/196) */
+body.lang-it .oereb-logo-viewport {
+    width: 154px;
+}
+
+/* 605*(50/196) */
+
+body.lang-de .oereb-logo-sprite {
+    transform: translateX(0);
+}
+
+body.lang-fr .oereb-logo-sprite {
+    transform: translateX(-182.4px);
+}
+
+/* -715*(50/196) */
+body.lang-it .oereb-logo-sprite {
+    transform: translateX(-336.7px);
+}
+
+/* -(715+605)*(50/196) */
 
 /* --- Mobile header improvements --- */
 @media (max-width: 600px) {
@@ -74,7 +97,7 @@ body.lang-it .oereb-logo-sprite { transform: translateX(-336.7px); } /* -(715+60
     }
 
     .header-logo {
-        height: 22px;     /* slightly smaller on mobile */
+        height: 22px; /* slightly smaller on mobile */
         max-width: 45%;
     }
 
@@ -83,22 +106,48 @@ body.lang-it .oereb-logo-sprite { transform: translateX(-336.7px); } /* -(715+60
     }
 
     /* Mobile (22px high) */
-    body.lang-de .oereb-logo-viewport { width: 80.2px; }  /* 715*(22/196) */
-    body.lang-fr .oereb-logo-viewport { width: 67.9px; }  /* 605*(22/196) */
-    body.lang-it .oereb-logo-viewport { width: 67.9px; }  /* 605*(22/196) */
+    body.lang-de .oereb-logo-viewport {
+        width: 80px;
+    }
 
-    body.lang-de .oereb-logo-sprite { transform: translateX(0); }
-    body.lang-fr .oereb-logo-sprite { transform: translateX(-80.2px); }  /* -715*(22/196) */
-    body.lang-it .oereb-logo-sprite { transform: translateX(-148.2px); } /* -(715+605)*(22/196) */
+    /* 715*(22/196) */
+    body.lang-fr .oereb-logo-viewport {
+        width: 68px;
+    }
 
+    /* 605*(22/196) */
+    body.lang-it .oereb-logo-viewport {
+        width: 68px;
+    }
+
+    /* 605*(22/196) */
+    body.lang-de .oereb-logo-sprite {
+        transform: translateX(0);
+    }
+
+    body.lang-fr .oereb-logo-sprite {
+        transform: translateX(-80.2px);
+    }
+
+    /* -715*(22/196) */
+    body.lang-it .oereb-logo-sprite {
+        transform: translateX(-148.2px);
+    }
+
+    /* -(715+605)*(22/196) */
     h1 {
         flex: 0 0 100%;
         font-size: 1.2em;
         order: 2;
     }
 
-    .header-logo-left { order: 1; }
-    .header-logo-right { order: 3; }
+    .header-logo-left {
+        order: 1;
+    }
+
+    .header-logo-right {
+        order: 3;
+    }
 }
 
 h1 {
@@ -106,13 +155,43 @@ h1 {
     margin: 0;
     font-size: 1.5em; /* Smaller title */
     text-align: center;
-    flex: 1;          /* keeps title centered between the two images */
+    flex: 1; /* keeps title centered between the two images */
 }
 
 .meta {
     color: #7f8c8d;
     font-size: 0.85em;
     margin-bottom: 10px;
+}
+
+/* Meta row: execution date (left) + download link (right) */
+.meta-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.meta-row .meta {
+    margin: 0; /* override meta default margin so the row aligns nicely */
+}
+
+.meta-download {
+    font-size: 0.80em;
+    color: #2c3e50;
+    text-decoration: none;
+    white-space: nowrap;
+
+    padding: 2px 10px;
+    border-radius: 12px;
+
+    background: rgba(44, 62, 80, 0.06);
+    border: 1px solid rgba(44, 62, 80, 0.10);
+}
+
+.meta-download:hover {
+    background: rgba(44, 62, 80, 0.10);
+    border-color: rgba(44, 62, 80, 0.18);
 }
 
 /* Canton Section Styling */
@@ -158,16 +237,37 @@ h1 {
     outline: none;
 }
 
-.canton-section summary::-webkit-details-marker { display: none; }
+.canton-section summary::-webkit-details-marker {
+    display: none;
+}
 
-.canton-section.all-success summary { border-left: 6px solid #28a745; }
-.canton-section.has-failures summary { border-left: 6px solid #dc3545; }
-.canton-section.has-failures .error-details summary { border-left: 6px solid #dc3545; }
-.canton-section.has-failures .warning-details summary { border-left: 6px solid #f0ad4e; }
-.canton-section.has-warnings summary { border-left: 6px solid #f0ad4e; }
-.canton-section.has-warnings .warning-details summary { border-left: 6px solid #f0ad4e; }
+.canton-section.all-success summary {
+    border-left: 6px solid #28a745;
+}
 
-.canton-title { font-size: 1.1em; }
+.canton-section.has-failures summary {
+    border-left: 6px solid #dc3545;
+}
+
+.canton-section.has-failures .error-details summary {
+    border-left: 6px solid #dc3545;
+}
+
+.canton-section.has-failures .warning-details summary {
+    border-left: 6px solid #f0ad4e;
+}
+
+.canton-section.has-warnings summary {
+    border-left: 6px solid #f0ad4e;
+}
+
+.canton-section.has-warnings .warning-details summary {
+    border-left: 6px solid #f0ad4e;
+}
+
+.canton-title {
+    font-size: 1.1em;
+}
 
 .canton-stats {
     background: rgba(255, 255, 255, 0.15);
@@ -181,6 +281,111 @@ h1 {
     background: #fdfdfd;
 }
 
+/* Config info lines (Canton-Config / Check-Config) */
+.config-line {
+    margin: 6px 0 10px 0;
+
+    /* more breathing room on the left so label integrates better */
+    padding: 6px 12px 6px 18px;
+
+    border: 1px solid #eee;
+    background: #fcfcfc;
+    border-radius: 4px;
+
+    font-size: 0.76em;     /* smaller + calmer */
+    line-height: 1.35;
+
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+
+    position: relative;    /* for the icon positioning */
+}
+
+/* Icon: placed inside left padding so it feels like a native "meta row" */
+.config-line::before {
+    content: "\2699"; /* ⚙ */
+    position: absolute;
+    left: 8px;
+    top: 7px;         /* aligns nicely with first text line */
+
+    display: inline-block;
+    width: 12px;
+    text-align: center;
+
+    color: #9aa5ab;
+
+    /* improves chance the glyph actually renders on Windows */
+    font-family: "Segoe UI Symbol", "Segoe UI", Arial, sans-serif;
+    font-size: 12px;
+    line-height: 1;
+}
+
+/* Label: make it look like a subtle “meta tag” */
+.config-label {
+    color: #8a949a;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    font-size: 0.90em;
+    white-space: nowrap;
+
+    /* a touch of spacing so it doesn’t visually stick to the icon */
+    margin-left: 2px;
+}
+
+/* Value: keep monospace but remove the “pill” feeling */
+.config-value {
+    font-family: 'Consolas', monospace;
+    font-size: 1em;
+    color: #2c3e50;
+
+    background: transparent;
+    border: 0;
+    padding: 0;
+
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* Canton-level config: keep boxed look */
+.canton-result-container > .config-line {
+    margin: 8px 0 12px 0;
+}
+
+/* Check-level config: integrate into the card body (less boxy) */
+.check-card .card-body .config-line {
+    margin: 0;
+    border-radius: 0;
+
+    border-right: 0;
+    border-bottom: 0;
+    border-top: 0;
+
+    background: #fcfcfc;
+}
+
+/* Divider between config and validation grid */
+.check-card .card-body .config-line + .validation-grid {
+    border-top: 1px solid #f0f0f0;
+    margin-top: 0;
+    padding-top: 10px;
+}
+
+/* Mobile stacking */
+@media (max-width: 600px) {
+    .config-line {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .config-line::before {
+        top: 8px;
+    }
+}
+
 /* Individual Check Card Styles */
 .check-card {
     border-radius: 4px;
@@ -189,8 +394,13 @@ h1 {
     background: #fff; /* Ensure white background */
 }
 
-.check-card.success { border-left: 4px solid #28a745; }
-.check-card.failure { border-left: 4px solid #dc3545; }
+.check-card.success {
+    border-left: 4px solid #28a745;
+}
+
+.check-card.failure {
+    border-left: 4px solid #dc3545;
+}
 
 .card-header {
     background: #fcfcfc;
@@ -200,7 +410,9 @@ h1 {
     gap: 10px;
 }
 
-.status-icon { font-size: 1.1em; }
+.status-icon {
+    font-size: 1.1em;
+}
 
 .url {
     flex-grow: 1;

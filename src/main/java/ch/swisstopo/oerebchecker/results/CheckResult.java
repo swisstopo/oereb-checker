@@ -1,9 +1,11 @@
 package ch.swisstopo.oerebchecker.results;
 
+import ch.swisstopo.oerebchecker.core.checks.CheckStatus;
 import ch.swisstopo.oerebchecker.core.validation.MessageSeverity;
 import ch.swisstopo.oerebchecker.core.validation.ValidatorMessage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.SerializedName;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -12,6 +14,15 @@ import java.util.List;
 import java.util.Map;
 
 public class CheckResult {
+
+    public String ConfigInfo;
+
+    public CheckStatus ExecutionStatus = CheckStatus.NOT_STARTED;
+    public String NotExecutedReasonCode = null;
+    public String NotExecutedReason = null;
+
+    public String ExceptionType = null;
+    public String ExceptionMessage = null;
 
     public String Url;
 
@@ -41,18 +52,28 @@ public class CheckResult {
     public Boolean HasError = null;
     public String ErrorMessage = null;
 
+    @SerializedName("ValidationMessages")
     private final Map<String, List<ValidatorMessage>> validationMessages = new LinkedHashMap<>();
 
-    public CheckResult(URI uri) {
-        Url = uri.toString();
+    public CheckResult() {
     }
 
-    public void addMessage(String category, ValidatorMessage message) {
-        validationMessages.computeIfAbsent(category, k -> new ArrayList<>()).add(message);
+    public void setUrl(URI uri) {
+        if(uri != null) {
+            Url = uri.toString();
+        }
+    }
+
+    public void setUrlString(String text) {
+        Url = text;
     }
 
     public Map<String, List<ValidatorMessage>> getValidationMessages() {
         return validationMessages;
+    }
+
+    public void addMessage(String category, ValidatorMessage message) {
+        validationMessages.computeIfAbsent(category, k -> new ArrayList<>()).add(message);
     }
 
     public int getWarningCount() {
@@ -63,11 +84,21 @@ public class CheckResult {
                 .sum();
     }
 
-    public boolean hasWarnings() {
-        return getWarningCount() > 0;
+    public int getErrorCount() {
+        return validationMessages.values().stream()
+                .flatMap(List::stream)
+                .filter(m -> m != null && m.Severity == MessageSeverity.ERROR)
+                .mapToInt(m -> 1)
+                .sum();
     }
 
     public void calculateResult() {
+
+        if (ExecutionStatus != CheckStatus.EXECUTED) {
+            Successful = false;
+            return;
+        }
+
         Successful = StatusCodeCorrect
                 && isOk(ContentTypeCorrect)
                 && isOk(XmlIsValid)
@@ -102,5 +133,4 @@ public class CheckResult {
 
         return gson.toJson(this);
     }
-
 }

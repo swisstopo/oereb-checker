@@ -1,7 +1,6 @@
 package ch.swisstopo.oerebchecker.core.checks;
 
 import ch.swisstopo.oerebchecker.config.models.GetEGRIDConfig;
-import ch.swisstopo.oerebchecker.results.CheckResult;
 import ch.swisstopo.oerebchecker.utils.RequestHelper;
 import ch.swisstopo.oerebchecker.models.ResponseFormat;
 import org.slf4j.Logger;
@@ -33,7 +32,12 @@ public class GetEGRID extends Check {
 
             if (uri != null) {
                 canRun = true;
-                result = new CheckResult(uri);
+                result.setUrl(uri);
+            } else {
+                setCannotRunReason(
+                    "URI_BUILD_FAILED",
+                    "Could not build request URI for GetEGRID (missing/invalid parameters or base URL)."
+                );
             }
         }
     }

@@ -19,7 +19,8 @@ class UidManagerTest {
     void checkUid() {
 
         try {
-            UidManager.validateUID("CHE-116.068.369");
+            boolean isValid = UidManager.validateUID("CHE263297189");
+            isValid = UidManager.validateUID("CHE-116.068.369");
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }

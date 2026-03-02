@@ -12,6 +12,7 @@ import java.net.http.HttpRequest;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("CommentedOutCode")
 public class RequestHelper {
     protected static final Logger logger = LoggerFactory.getLogger(RequestHelper.class);
 
@@ -123,6 +124,7 @@ public class RequestHelper {
         return null;
     }
 
+    @SuppressWarnings("SameReturnValue")
     private static String getUserAgent() {
         return "Swisstopo-Oereb-Checker/1.0"; // "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36";
     }

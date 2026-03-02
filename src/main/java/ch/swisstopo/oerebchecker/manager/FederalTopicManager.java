@@ -97,9 +97,18 @@ public class FederalTopicManager {
                 if (match.isPresent()) {
                     String expectedText = match.get().getLocalisationCHV1LocalisedText().getText();
                     if (!expectedText.equals(text)) {
-                        String message = String.format("Content mismatch for tag '%s' in language '%s'. Expected: '%s', Actual: '%s' at %s", tagName, language, expectedText, text, contextXPath);
-                        errors.add(ValidatorMessage.error("Federal document content mismatch", message));
-                        logger.error(message);
+                        String msg = String.format(
+                            "Federal document '%s' differs for language '%s'. Expected: '%s', Actual: '%s'.",
+                            tagName, language, expectedText, text
+                        );
+                        errors.add(ValidatorMessage.error(
+                            "Federal Topic Validation",
+                            "FEDERAL_DOC_TEXT_MISMATCH",
+                            msg,
+                            contextXPath,
+                            null
+                        ));
+                        logger.error("{} Location: {}", msg, contextXPath);
                     }
                 }
             }
@@ -136,9 +145,18 @@ public class FederalTopicManager {
                 if (match.isPresent()) {
                     String expectedUri = match.get().getOeREBKRMV20LocalisedUri().getText();
                     if (!expectedUri.equals(text)) {
-                        String message = String.format("URI mismatch for tag '%s' in language '%s'. Expected: '%s', Actual: '%s' at %s", tagName, language, expectedUri, text, contextXPath);
-                        errors.add(ValidatorMessage.error("Federal document URI mismatch", message));
-                        logger.error(message);
+                        String message = String.format(
+                            "Federal document '%s' URI differs for language '%s'. Expected: '%s', Actual: '%s'.",
+                            tagName, language, expectedUri, text
+                        );
+                        errors.add(ValidatorMessage.error(
+                            "Federal Topic Validation",
+                            "FEDERAL_DOC_URI_MISMATCH",
+                            message,
+                            contextXPath,
+                            null
+                        ));
+                        logger.error("{} Location: {}", message, contextXPath);
                     }
                 }
             }

@@ -2,15 +2,12 @@ package ch.swisstopo.oerebchecker.core.checks;
 
 import ch.swisstopo.oerebchecker.config.models.GetVersionsConfig;
 import ch.swisstopo.oerebchecker.core.validation.ValidatorMessage;
-import ch.swisstopo.oerebchecker.results.CheckResult;
 import ch.swisstopo.oerebchecker.utils.RequestHelper;
 import ch.swisstopo.oerebchecker.models.ResponseFormat;
 import ch.swisstopo.oerebchecker.models.ResponseStatusCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 
 import java.net.URI;
 import java.util.Arrays;
@@ -34,7 +31,12 @@ public class GetVersions extends Check {
 
             if (uri != null) {
                 canRun = true;
-                result = new CheckResult(uri);
+                result.setUrl(uri);
+            } else {
+                setCannotRunReason(
+                    "URI_BUILD_FAILED",
+                    "Could not build request URI for GetVersions (missing/invalid parameters or base URL)."
+                );
             }
         }
     }
@@ -42,17 +44,18 @@ public class GetVersions extends Check {
     private boolean checkSupportedVersion(Document doc) {
         try {
             String expected = "extract-2.0";
-            String version = xpath.getString(doc, "//v:supportedVersion[v:version='extract-2.0']/v:version");
+            String version = xpath.getString(doc, "//v:supportedVersion[v:version]/v:version");
 
             boolean ok = expected.equals(version);
             if (!ok && result != null) {
                 result.addMessage("Business Logic",
-                        ValidatorMessage.error(
-                                "Business Logic",
-                                "Supported Version",
-                                "Expected supported version '" + expected + "', but found '" + version + "' in the response.",
-                                ""
-                        )
+                    ValidatorMessage.error(
+                        "Business Logic",
+                        "VERSIONS_SUPPORTED_VERSION_UNEXPECTED",
+                        "Unsupported version in GetVersions response. Expected '" + expected + "', but found '" + version + "'.",
+                        "//v:supportedVersion[v:version]/v:version",
+                        null
+                    )
                 );
             }
             return ok;
@@ -61,12 +64,13 @@ public class GetVersions extends Check {
             logger.error("XPath error in GetVersions: {}", e.getMessage());
             if (result != null) {
                 result.addMessage("Business Logic",
-                        ValidatorMessage.error(
-                                "Business Logic",
-                                "Supported Version",
-                                "Failed to evaluate supported versions (XPath evaluation error).",
-                                e.getMessage()
-                        )
+                    ValidatorMessage.error(
+                        "Business Logic",
+                        "VERSIONS_SUPPORTED_VERSION_XPATH_FAILED",
+                        "Failed to read supported version from GetVersions response (XPath evaluation failed).",
+                        "//v:supportedVersion[v:version]/v:version",
+                        e.getMessage()
+                    )
                 );
             }
             return false;

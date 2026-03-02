@@ -3,7 +3,6 @@ package ch.swisstopo.oerebchecker.core.checks;
 import ch.swisstopo.oerebchecker.config.models.GetCapabilitiesConfig;
 import ch.swisstopo.oerebchecker.core.validation.ValidatorMessage;
 import ch.swisstopo.oerebchecker.models.ResponseStatusCode;
-import ch.swisstopo.oerebchecker.results.CheckResult;
 import ch.swisstopo.oerebchecker.utils.RequestHelper;
 import ch.swisstopo.oerebchecker.models.ResponseFormat;
 import org.slf4j.Logger;
@@ -39,7 +38,12 @@ public class GetCapabilities extends Check {
 
             if (uri != null) {
                 canRun = true;
-                result = new CheckResult(uri);
+                result.setUrl(uri);
+            } else {
+                setCannotRunReason(
+                    "URI_BUILD_FAILED",
+                    "Could not build request URI for GetCapabilities (missing/invalid parameters or base URL)."
+                );
             }
         }
     }
@@ -92,12 +96,13 @@ public class GetCapabilities extends Check {
 
                 if (result != null) {
                     result.addMessage("Capabilities Validation",
-                            ValidatorMessage.error(
-                                    "Capabilities",
-                                    "Parse",
-                                    "Failed to parse GetCapabilities response (XPath evaluation error).",
-                                    e.getMessage()
-                            )
+                        ValidatorMessage.error(
+                            "Capabilities Validation",
+                            "CAPABILITIES_XPATH_EVALUATION_FAILED",
+                            "Failed to parse GetCapabilities response (XPath evaluation failed).",
+                            "//e:topic/ed:Code and //e:language",
+                            e.getMessage()
+                        )
                     );
                 }
             }
