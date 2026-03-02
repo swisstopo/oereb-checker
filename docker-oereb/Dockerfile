@@ -9,6 +9,7 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 # Change ownership of the working directory
 RUN chown -R appuser:appgroup /app
 
+# JAR must be built with: mvn package -Plambda
 COPY ./target/oereb-checker-1.0.jar /app/oereb-checker-1.0.jar
 
 LABEL authors="Geocloud AG"
