@@ -57,6 +57,7 @@ public class UidManager {
                 publicServices = new PublicServices(wsdlResource).getBasicHttpBindingIPublicServices();
                 logger.info("BFS UID Public Services initialized.");
             } catch (Exception e) {
+                publicServices = null;
                 logger.error("Failed to initialize BFS UID Public Services: {}", e.getMessage());
             }
         }
@@ -69,8 +70,11 @@ public class UidManager {
 
         return validationCache.computeIfAbsent(uid, key -> {
             try {
-
                 if (partnerServices == null) {
+                    if (publicServices == null) {
+                        logger.warn("UID validation skipped: neither partner nor public UID services are initialized.");
+                        return false;
+                    }
                     logger.trace("Calling BFS UID public service for validation of: {}", key);
                     return publicServices.validateUID(key);
                 } else {

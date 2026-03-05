@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog" prefer="system">
+    <!-- Prod -->
+    <system systemId="https://www.uid-wse.admin.ch/V5.0/PublicServices.svc?wsdl=wsdl0"
+            uri="Prod_PublicServices.wsdl0.wsdl"/>
+    <!-- Test -->
+    <system systemId="https://www.uid-wse-a.admin.ch/V5.0/PublicServices.svc?wsdl=wsdl0"
+            uri="Test_PublicServices.wsdl0.wsdl"/>
+</catalog>

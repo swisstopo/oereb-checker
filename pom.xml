@@ -186,7 +186,7 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>${org.junit.jupiter.version}</version>
-            <scope>test</scope>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
@@ -222,6 +222,7 @@
                 <version>4.0.2</version>
                 <executions>
                     <execution>
+                        <id>wsimport-partner</id>
                         <goals>
                             <goal>wsimport</goal>
                         </goals>
@@ -229,6 +230,34 @@
                             <wsdlDirectory>src/main/resources/ch/swisstopo/bfs</wsdlDirectory>
                             <wsdlFiles>
                                 <wsdlFile>Prod_PartnerServices.svc.wsdl</wsdlFile>
+                            </wsdlFiles>
+                            <packageName>ch.swisstopo.oerebchecker.utils.uid</packageName>
+                            <sourceDestDir>${project.build.directory}/generated-sources/wsimport</sourceDestDir>
+                            <!-- 1. Resolve naming collisions automatically -->
+                            <args>
+                                <arg>-B-XautoNameResolution</arg>
+                                <!-- Override imported WSDL/XSD locations -->
+                                <arg>-catalog</arg>
+                                <arg>${project.basedir}/src/main/resources/ch/swisstopo/bfs/wsimport-catalog.xml</arg>
+                                <!-- Make generated wsdlLocation portable -->
+                                <arg>-wsdllocation</arg>
+                                <arg>ch/swisstopo/bfs/Prod_PartnerServices.svc.wsdl</arg>
+                            </args>
+                            <!-- 2. Allow the plugin to download the XSDs via HTTPS -->
+                            <vmArgs>
+                                <vmArg>-Djavax.xml.accessExternalSchema=all</vmArg>
+                            </vmArgs>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>wsimport-public</id>
+                        <goals>
+                            <goal>wsimport</goal>
+                        </goals>
+                        <configuration>
+                            <wsdlDirectory>src/main/resources/ch/swisstopo/bfs</wsdlDirectory>
+                            <wsdlFiles>
                                 <wsdlFile>Prod_PublicServices.svc.wsdl</wsdlFile>
                             </wsdlFiles>
                             <packageName>ch.swisstopo.oerebchecker.utils.uid</packageName>
@@ -236,6 +265,12 @@
                             <!-- 1. Resolve naming collisions automatically -->
                             <args>
                                 <arg>-B-XautoNameResolution</arg>
+                                <!-- Override imported WSDL/XSD locations -->
+                                <arg>-catalog</arg>
+                                <arg>${project.basedir}/src/main/resources/ch/swisstopo/bfs/wsimport-catalog.xml</arg>
+                                <!-- Make generated wsdlLocation portable -->
+                                <arg>-wsdllocation</arg>
+                                <arg>ch/swisstopo/bfs/Prod_PublicServices.svc.wsdl</arg>
                             </args>
                             <!-- 2. Allow the plugin to download the XSDs via HTTPS -->
                             <vmArgs>

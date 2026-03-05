@@ -2,12 +2,15 @@ package ch.swisstopo.oerebchecker.utils;
 
 import java.io.*;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 
 public class ResourceHelper {
 
     public static URL getResourceUrl(String path) {
-        return Thread.currentThread().getContextClassLoader().getResource(path);
+        URL url = Thread.currentThread().getContextClassLoader().getResource(path);
+        if (url == null) {
+            url = ResourceHelper.class.getResource("/" + path);
+        }
+        return url;
     }
 
     public static InputStream getResourceStream(String path) {
@@ -16,13 +19,6 @@ public class ResourceHelper {
             is = ResourceHelper.class.getResourceAsStream("/" + path);
         }
         return is;
-    }
-
-    public static String readResourceAsString(String path) throws IOException {
-        try (InputStream is = getResourceStream(path)) {
-            if (is == null) throw new FileNotFoundException("Resource not found: " + path);
-            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
-        }
     }
 
     public static byte[] readResourceAsBytes(String path) throws IOException {
