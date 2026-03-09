@@ -4,6 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
 
 public class LocalStorageProvider implements IStorageProvider {
     private static final Logger logger = LoggerFactory.getLogger(LocalStorageProvider.class);
@@ -35,5 +38,19 @@ public class LocalStorageProvider implements IStorageProvider {
     @Override
     public boolean exists(Path filePath) {
         return Files.exists(filePath);
+    }
+
+    @Override
+    public List<Path> listObjects(String prefix) {
+        Path dir = Paths.get(prefix);
+        if (!Files.isDirectory(dir)) {
+            return Collections.emptyList();
+        }
+        try (Stream<Path> stream = Files.walk(dir)) {
+            return stream.filter(Files::isRegularFile).toList();
+        } catch (IOException e) {
+            logger.error("Failed to list local directory: {}", prefix, e);
+            return Collections.emptyList();
+        }
     }
 }

@@ -12,6 +12,9 @@ import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 public class S3StorageProvider implements IStorageProvider {
@@ -78,6 +81,19 @@ public class S3StorageProvider implements IStorageProvider {
         } catch (Exception e) {
             logger.error("S3 Put failed: {}/{}", bucketName, s3Key, e);
             return false;
+        }
+    }
+
+    @Override
+    public List<Path> listObjects(String prefix) {
+        try {
+            ListObjectsV2Response response = client.listObjectsV2(b -> b.bucket(bucketName).prefix(prefix));
+            return response.contents().stream()
+                    .map(s3Obj -> Paths.get(s3Obj.key()))
+                    .toList();
+        } catch (Exception e) {
+            logger.error("Failed to list S3 objects with prefix '{}'", prefix, e);
+            return Collections.emptyList();
         }
     }
 
