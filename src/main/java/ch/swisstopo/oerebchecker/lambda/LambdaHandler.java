@@ -2,12 +2,15 @@ package ch.swisstopo.oerebchecker.lambda;
 
 import ch.swisstopo.oerebchecker.OerebChecker;
 import ch.swisstopo.oerebchecker.utils.EnvVars;
+import ch.swisstopo.oerebchecker.manager.ResultManager;
+import ch.swisstopo.oerebchecker.storage.S3StorageProvider;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +34,12 @@ public class LambdaHandler implements RequestHandler<Map<String, Object>, String
         logger.log("Environment - " + EnvVars.S3_SCRIPTS_BUCKET + ": " + System.getenv(EnvVars.S3_SCRIPTS_BUCKET));
         logger.log("Environment - " + EnvVars.S3_RESULTS_BUCKET + ": " + System.getenv(EnvVars.S3_RESULTS_BUCKET));
         logger.log("Environment - " + EnvVars.S3_RESULTS_OUTPUT_PATH + ": " + System.getenv(EnvVars.S3_RESULTS_OUTPUT_PATH));
+
+        // Aggregate mode: build result.html from all per-canton JSONs written by the
+        // parallel canton lambdas. Invoked as the final Step Function step.
+        if ("aggregate".equals(input.get("action"))) {
+            return runAggregation(context);
+        }
 
         try {
             // Convert JSON map to CLI args, e.g., {"canton": "AG"} -> ["-canton", "AG"]
@@ -65,6 +74,23 @@ public class LambdaHandler implements RequestHandler<Map<String, Object>, String
                 logger.log("Cause Stack Trace:\n" + causeSw.toString());
             }
 
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String runAggregation(Context context) {
+        context.getLogger().log("=== Aggregate mode: building result.html from canton JSONs ===");
+        try {
+
+            S3StorageProvider storage = S3StorageProvider.createFromEnv(EnvVars.S3_RESULTS_BUCKET)
+                    .orElseThrow(() -> new RuntimeException("RESULTS_BUCKET not configured"));
+
+            String outputPath = System.getenv(EnvVars.S3_RESULTS_OUTPUT_PATH);
+            ResultManager.aggregate(storage, outputPath != null ? Paths.get(outputPath) : Paths.get(""));
+
+            return "Aggregation completed successfully";
+        } catch (Exception e) {
+            context.getLogger().log("Aggregation failed: " + e.getMessage());
             throw new RuntimeException(e);
         }
     }

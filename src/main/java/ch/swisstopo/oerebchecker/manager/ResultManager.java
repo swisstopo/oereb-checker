@@ -3,7 +3,10 @@ package ch.swisstopo.oerebchecker.manager;
 import ch.swisstopo.oerebchecker.models.Canton;
 import ch.swisstopo.oerebchecker.storage.IStorageProvider;
 import ch.swisstopo.oerebchecker.results.CantonResult;
+import ch.swisstopo.oerebchecker.utils.EnvVars;
 import ch.swisstopo.oerebchecker.utils.ResourceHelper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -13,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.List;
 
 public class ResultManager {
     private static final Logger logger = LoggerFactory.getLogger(ResultManager.class);
@@ -24,8 +28,80 @@ public class ResultManager {
     }
 
     public static void write(IStorageProvider storage, Path outputDirectoryPath, CantonResult cantonResult) {
-        Path outputHtmlFilePath = outputDirectoryPath.resolve("result.html");
+
+        // Skip HTML writing when running inside AWS Lambda.
+        // Multiple canton lambdas run in parallel and would race on the single shared
+        // result.html in S3 (read-modify-write). The HTML is built once afterwards by
+        // the dedicated aggregate() step instead.
+        boolean inLambda = System.getenv(EnvVars.AWS_LAMBDA_FUNCTION_NAME) != null;
+        if (!inLambda) {
+            writeHtml(storage, outputDirectoryPath, cantonResult);
+        }
+
         Path outputJsonFilePath = outputDirectoryPath.resolve("data").resolve(cantonResult.getCanton().name().toLowerCase() + ".json");
+        String resultJson = cantonResult.getAsJsonString();
+        if (resultJson != null) {
+            if (!storage.writeObject(outputJsonFilePath, new ByteArrayInputStream(resultJson.getBytes(StandardCharsets.UTF_8)))) {
+                logger.error("Failed to write json file '{}'", outputJsonFilePath);
+            }
+        }
+    }
+
+    /**
+     * Reads all per-canton JSON files from storage and builds a single result.html.
+     * Called once after all canton lambdas have finished.
+     */
+    public static void aggregate(IStorageProvider storage, Path outputDirectoryPath) {
+        Gson gson = new GsonBuilder().create();
+        String jsonPrefix = outputDirectoryPath.toString().isEmpty() ? "data/" : outputDirectoryPath + "/data/";
+
+        List<Path> jsonFiles = storage.listObjects(jsonPrefix);
+        if (jsonFiles.isEmpty()) {
+            logger.warn("No canton JSON files found under prefix '{}', skipping HTML generation", jsonPrefix);
+            return;
+        }
+
+        Path outputHtmlFilePath = outputDirectoryPath.resolve("result.html");
+        TemplateReadResult template = readResultHtmlTemplate(storage, outputHtmlFilePath);
+        if (template == null || template.document() == null) {
+            logger.error("Could not load HTML template, aborting aggregation");
+            return;
+        }
+
+        ensureStaticAssets(storage, outputDirectoryPath, template.templateUpgraded());
+
+        Document htmlPage = template.document();
+        for (Path jsonPath : jsonFiles) {
+            byte[] data = storage.readObject(jsonPath);
+            if (data == null) {
+                logger.warn("Could not read {}", jsonPath);
+                continue;
+            }
+
+            try {
+                CantonResult cantonResult = gson.fromJson(new String(data, StandardCharsets.UTF_8), CantonResult.class);
+                writeHtml(htmlPage, cantonResult);
+            } catch (Exception e) {
+                logger.error("Failed to deserialize canton result from {}: {}", jsonPath, e.getMessage(), e);
+            }
+        }
+
+        Element footerPara = htmlPage.selectFirst("footer p");
+        if (footerPara != null) {
+            int currentYear = java.time.LocalDate.now().getYear();
+            footerPara.text("© " + currentYear + " Swisstopo - OeREB Checker");
+        }
+
+        byte[] htmlBytes = htmlPage.outerHtml().getBytes(StandardCharsets.UTF_8);
+        if (!storage.writeObject(outputHtmlFilePath, new ByteArrayInputStream(htmlBytes))) {
+            logger.error("Failed to write aggregated result.html");
+        } else {
+            logger.info("Aggregated result.html written successfully ({} cantons)", jsonFiles.size());
+        }
+    }
+
+    private static void writeHtml(IStorageProvider storage, Path outputDirectoryPath, CantonResult cantonResult) {
+        Path outputHtmlFilePath = outputDirectoryPath.resolve("result.html");
 
         TemplateReadResult template = readResultHtmlTemplate(storage, outputHtmlFilePath);
         if (template == null || template.document() == null) {
@@ -36,6 +112,21 @@ public class ResultManager {
         ensureStaticAssets(storage, outputDirectoryPath, template.templateUpgraded());
 
         Document htmlPage = template.document();
+        writeHtml(htmlPage, cantonResult);
+
+        Element footerPara = htmlPage.selectFirst("footer p");
+        if (footerPara != null) {
+            int currentYear = java.time.LocalDate.now().getYear();
+            footerPara.text("© " + currentYear + " Swisstopo - OeREB Checker");
+        }
+
+        byte[] htmlBytes = htmlPage.outerHtml().getBytes(StandardCharsets.UTF_8);
+        if (!storage.writeObject(outputHtmlFilePath, new ByteArrayInputStream(htmlBytes))) {
+            logger.error("Failed to write html file '{}'", outputHtmlFilePath);
+        }
+    }
+
+    private static void writeHtml(Document htmlPage, CantonResult cantonResult) {
         clearCanton(htmlPage, cantonResult.getCanton());
 
         String placeholderId = getCantonPlaceholderId(cantonResult.getCanton());
@@ -85,25 +176,6 @@ public class ResultManager {
 
             resultPlaceholder.replaceWith(details);
         }
-
-        // Update footer year dynamically
-        Element footerPara = htmlPage.selectFirst("footer p");
-        if (footerPara != null) {
-            int currentYear = java.time.LocalDate.now().getYear();
-            footerPara.text("© " + currentYear + " Swisstopo - OeREB Checker");
-        }
-
-        byte[] htmlBytes = htmlPage.outerHtml().getBytes(StandardCharsets.UTF_8);
-        if (!storage.writeObject(outputHtmlFilePath, new ByteArrayInputStream(htmlBytes))) {
-            logger.error("Failed to write html file '{}'", outputHtmlFilePath);
-        }
-
-        String resultJson = cantonResult.getAsJsonString();
-        if (resultJson != null) {
-            if (!storage.writeObject(outputJsonFilePath, new ByteArrayInputStream(resultJson.getBytes(StandardCharsets.UTF_8)))) {
-                logger.error("Failed to write json file '{}'", outputJsonFilePath);
-            }
-        }
     }
 
     private static TemplateReadResult readResultHtmlTemplate(IStorageProvider storage, Path filePath) {
@@ -129,7 +201,6 @@ public class ResultManager {
         }
 
         if (storedBytes == null || storedBytes.length == 0) {
-            // Nothing in storage -> bootstrap from resources
             templateUpgraded = true;
             chosenBytes = resourceBytes;
 
@@ -141,9 +212,7 @@ public class ResultManager {
             String storedVersion = extractTemplateVersion(storedBytes);
             String resourceVersion = extractTemplateVersion(resourceBytes);
 
-            boolean differs = (resourceVersion != null && !resourceVersion.equals(storedVersion))
-                    || (resourceVersion == null && storedVersion != null);
-
+            boolean differs = (resourceVersion != null && !resourceVersion.equals(storedVersion)) || (resourceVersion == null && storedVersion != null);
             if (differs) {
                 logger.info("Updating stored result.html template (storedVersion={}, resourceVersion={})", storedVersion, resourceVersion);
                 templateUpgraded = true;
@@ -159,10 +228,12 @@ public class ResultManager {
         }
 
         try {
-            String baseUri = "https://example.com/";
-            Document doc = Jsoup.parse(new ByteArrayInputStream(chosenBytes), StandardCharsets.UTF_8.name(), baseUri);
+            Document doc = Jsoup.parse(
+                new ByteArrayInputStream(chosenBytes),
+                StandardCharsets.UTF_8.name(),
+                "https://example.com/"
+            );
             return new TemplateReadResult(doc, templateUpgraded);
-
         } catch (IOException e) {
             logger.error("Failed to parse result template: {}", e.getMessage(), e);
             return null;
@@ -171,7 +242,11 @@ public class ResultManager {
 
     private static String extractTemplateVersion(byte[] htmlBytes) {
         try {
-            Document doc = Jsoup.parse(new ByteArrayInputStream(htmlBytes), StandardCharsets.UTF_8.name(), "https://example.com/");
+            Document doc = Jsoup.parse(
+                new ByteArrayInputStream(htmlBytes),
+                StandardCharsets.UTF_8.name(),
+                "https://example.com/"
+            );
             Element meta = doc.selectFirst("meta[name=\"" + TEMPLATE_VERSION_META + "\"]");
             return meta != null ? meta.attr("content") : null;
         } catch (Exception e) {
@@ -181,21 +256,26 @@ public class ResultManager {
     }
 
     private static void ensureStaticAssets(IStorageProvider storage, Path outputDirectoryPath, boolean forceOverwrite) {
-        copyResourceAsset(storage,
+        copyResourceAsset(
+                storage,
                 outputDirectoryPath.resolve("style").resolve("site.css"),
                 "ch/swisstopo/oerebchecker/style/site.css",
-                forceOverwrite);
+                forceOverwrite
+        );
 
-
-        copyResourceAsset(storage,
+        copyResourceAsset(
+                storage,
                 outputDirectoryPath.resolve("style").resolve("img").resolve("Schweiz_Eidgen_Karten_dfir_www_cmyk.jpg"),
                 "ch/swisstopo/oerebchecker/style/img/Schweiz_Eidgen_Karten_dfir_www_cmyk.jpg",
-                forceOverwrite);
+                forceOverwrite
+        );
 
-        copyResourceAsset(storage,
+        copyResourceAsset(
+                storage,
                 outputDirectoryPath.resolve("style").resolve("img").resolve("OEREB_Kataster_de_fr_it.jpg"),
                 "ch/swisstopo/oerebchecker/style/img/OEREB_Kataster_de_fr_it.jpg",
-                forceOverwrite);
+                forceOverwrite
+        );
     }
 
     private static void copyResourceAsset(IStorageProvider storage, Path targetPath, String classpathResourcePath, boolean forceOverwrite) {
@@ -224,7 +304,6 @@ public class ResultManager {
     }
 
     private static void clearCanton(Document doc, Canton canton) {
-
         String placeholderId = getCantonPlaceholderId(canton);
         Element existingSection = doc.getElementById(placeholderId);
 

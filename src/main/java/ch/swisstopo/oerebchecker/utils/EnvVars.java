@@ -3,6 +3,8 @@ package ch.swisstopo.oerebchecker.utils;
 public final class EnvVars {
     private EnvVars() {}
 
+    public static final String AWS_LAMBDA_FUNCTION_NAME = "AWS_LAMBDA_FUNCTION_NAME";
+
     public static final String S3_REGION_NAME = "S3RegionName";
     public static final String S3_ACCESS_KEY = "S3AccessKey";
     public static final String S3_SECRET_KEY = "S3SecretKey";
