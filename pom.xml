@@ -133,16 +133,31 @@
             <artifactId>jakarta.xml.ws-api</artifactId>
             <version>${jakarta.xml.ws.version}</version>
         </dependency>
-        <dependency>
-            <groupId>jakarta.jws</groupId>
-            <artifactId>jakarta.jws-api</artifactId>
-            <version>${jakarta.jws.version}</version>
-        </dependency>
+        <!-- jakarta.jws-api removed: all its classes are part of jakarta.xml.ws-api:4.0.0 -->
         <!-- JAX-WS Runtime implementation (needed to actually run the soap calls) -->
         <dependency>
             <groupId>com.sun.xml.ws</groupId>
             <artifactId>jaxws-rt</artifactId>
             <version>${com.sun.xml.ws.version}</version>
+            <exclusions>
+                <!-- com.sun.xml.bind:jaxb-impl is the old groupId for the same artifact
+                     as org.glassfish.jaxb:jaxb-runtime (also pulled in by jaxws-rt).
+                     Keeping both causes 641 overlapping classes in the shade JAR. -->
+                <exclusion>
+                    <groupId>com.sun.xml.bind</groupId>
+                    <artifactId>jaxb-impl</artifactId>
+                </exclusion>
+                <!-- com.sun.xml.bind:jaxb-core duplicates org.glassfish.jaxb:jaxb-core -->
+                <exclusion>
+                    <groupId>com.sun.xml.bind</groupId>
+                    <artifactId>jaxb-core</artifactId>
+                </exclusion>
+                <!-- jakarta.jws classes are already included in jakarta.xml.ws-api:4.0.0 -->
+                <exclusion>
+                    <groupId>jakarta.jws</groupId>
+                    <artifactId>jakarta.jws-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- https://docs.verapdf.org/develop/ -->
@@ -175,6 +190,16 @@
             <groupId>org.verapdf</groupId>
             <artifactId>wcag-validation-jakarta</artifactId>
             <version>${org.verapdf.version}</version>
+            <exclusions>
+                <!-- verapdf incorrectly declares jacoco-maven-plugin as a compile
+                     dependency (it's a Maven plugin, not a runtime library). Without
+                     this exclusion, JaCoCo + its transitive deps (ASM, Maven artifacts,
+                     Plexus, ...) end up in the production uber-JAR. -->
+                <exclusion>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.verapdf</groupId>
@@ -217,6 +242,19 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <compilerArgs>
+                        <!-- The generated WSDL stub (PublicServices.java) uses APIs that are
+                             deprecated in newer JAX-WS versions. We cannot change generated
+                             code, so we suppress the deprecation note globally. -->
+                        <arg>-Xlint:-deprecation</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>com.sun.xml.ws</groupId>
                 <artifactId>jaxws-maven-plugin</artifactId>
                 <version>4.0.2</version>
@@ -233,8 +271,8 @@
                             </wsdlFiles>
                             <packageName>ch.swisstopo.oerebchecker.utils.uid</packageName>
                             <sourceDestDir>${project.build.directory}/generated-sources/wsimport</sourceDestDir>
-                            <!-- 1. Resolve naming collisions automatically -->
                             <args>
+                                <!-- Resolve naming collisions automatically -->
                                 <arg>-B-XautoNameResolution</arg>
                                 <!-- Override imported WSDL/XSD locations -->
                                 <arg>-catalog</arg>
@@ -308,10 +346,15 @@
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
-                                <!-- Exclude these to stop the warnings and reduce JAR size -->
                                 <exclude>META-INF/LICENSE*</exclude>
                                 <exclude>META-INF/NOTICE*</exclude>
                                 <exclude>META-INF/DEPENDENCIES</exclude>
+                                <!-- Maven POM metadata: not needed at runtime -->
+                                <exclude>META-INF/maven/**</exclude>
+                                <!-- Netty embeds this in every module jar; only one copy is needed -->
+                                <exclude>META-INF/io.netty.versions.properties</exclude>
+                                <!-- Plexus component descriptors from Maven build-tool deps -->
+                                <exclude>META-INF/plexus/**</exclude>
                             </excludes>
                         </filter>
                         <filter>
