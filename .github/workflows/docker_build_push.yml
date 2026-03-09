@@ -73,6 +73,9 @@ jobs:
             ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:latest
             ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.version.outputs.version }}
 
+      - name: Rename JAR for release
+        run: cp target/oereb-checker-1.0.jar target/oereb-checker-${{ steps.version.outputs.version }}.jar
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -82,3 +85,4 @@ jobs:
           generate_release_notes: true
           make_latest: true
           fail_on_unmatched_files: true
+          files: target/oereb-checker-${{ steps.version.outputs.version }}.jar
