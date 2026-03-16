@@ -57,6 +57,7 @@ public abstract class Check implements ICheck {
     protected ResponseFormat responseFormat = null;
     protected int responseStatusCode = ResponseStatusCode.OK;
     protected boolean provoke500 = false;
+    protected boolean followOneRedirect = false;
 
     private Document document = null;
 
@@ -98,6 +99,8 @@ public abstract class Check implements ICheck {
             provoke500 = true;
         }
 
+        followOneRedirect = config.FollowOneRedirect;
+
         return true;
     }
 
@@ -105,9 +108,15 @@ public abstract class Check implements ICheck {
         if (!canRun) {
             if (cannotRunReasonCode == null && cannotRunReasonMessage == null) {
                 if (uri == null) {
-                    setCannotRunReason("URI_BUILD_FAILED", "Check could not be executed because no valid request URI was created (check configuration/parameters).");
+                    setCannotRunReason(
+                        "URI_BUILD_FAILED",
+                        "Check could not be executed because no valid request URI was created (check configuration/parameters)."
+                    );
                 } else {
-                    setCannotRunReason("CANNOT_RUN", "Check could not be executed (canRun=false).");
+                    setCannotRunReason(
+                        "CANNOT_RUN",
+                        "Check could not be executed (canRun=false)."
+                    );
                 }
             }
 
@@ -141,6 +150,24 @@ public abstract class Check implements ICheck {
             HttpClient client = RequestHelper.getSharedHttpClient();
             HttpRequest request = RequestHelper.createRequest(uri);
             HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+
+            if (followOneRedirect && responseStatusCode != ResponseStatusCode.SEE_OTHER && isRedirect(response.statusCode())) {
+
+                URI redirectUri = extractRedirectUri(response);
+                if (redirectUri != null) {
+                    logger.info("Following one redirect: {} -> {}", uri, redirectUri);
+
+                    result.RedirectFollowed = true;
+                    result.setRedirectUrl(redirectUri);
+
+                    try (InputStream ignored = response.body()) {
+                        // close the first response body before the second request
+                    }
+
+                    HttpRequest redirectRequest = RequestHelper.createRequest(redirectUri);
+                    response = client.send(redirectRequest, HttpResponse.BodyHandlers.ofInputStream());
+                }
+            }
 
             try (InputStream is = response.body()) {
                 processResponse(response, is);
@@ -184,6 +211,29 @@ public abstract class Check implements ICheck {
 
         logger.info("Done:  {} (checkConfig={})", uri, result.ConfigInfo);
         return result;
+    }
+
+    private boolean isRedirect(int statusCode) {
+        return statusCode == ResponseStatusCode.MOVED_PERMANENTLY ||
+                statusCode == ResponseStatusCode.FOUND ||
+                statusCode == ResponseStatusCode.SEE_OTHER ||
+                statusCode == ResponseStatusCode.TEMPORARY_REDIRECT ||
+                statusCode == ResponseStatusCode.PERMANENT_REDIRECT;
+    }
+
+    private URI extractRedirectUri(HttpResponse<?> response) {
+        try {
+            String location = response.headers().firstValue("location").orElse(null);
+            if (StringUtils.isBlank(location)) {
+                logger.warn("Redirect response received without Location header");
+                return null;
+            }
+
+            return response.uri().resolve(location);
+        } catch (Exception e) {
+            logger.warn("Failed to resolve redirect Location header", e);
+            return null;
+        }
     }
 
     private void processResponse(HttpResponse<InputStream> response, InputStream is) {

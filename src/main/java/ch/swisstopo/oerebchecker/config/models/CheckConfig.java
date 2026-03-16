@@ -11,6 +11,7 @@ public abstract class CheckConfig {
 
     public boolean Provoke500 = false;
     public Integer ExpectedStatusCode = null;
+    public boolean FollowOneRedirect = false;
 
     public abstract boolean isValid();
 

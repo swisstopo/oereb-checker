@@ -31,6 +31,10 @@ public class CliParser {
         return options.containsKey("-help") || options.containsKey("-info");
     }
 
+    public String getAction() {
+        return getParam("action");
+    }
+
     public String getConfigFilePath() {
         return getParam("cFP");
     }

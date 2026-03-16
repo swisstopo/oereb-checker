@@ -35,6 +35,7 @@ public class LambdaHandler implements RequestHandler<Map<String, Object>, String
         logger.log("Environment - " + EnvVars.S3_RESULTS_BUCKET + ": " + System.getenv(EnvVars.S3_RESULTS_BUCKET));
         logger.log("Environment - " + EnvVars.S3_RESULTS_OUTPUT_PATH + ": " + System.getenv(EnvVars.S3_RESULTS_OUTPUT_PATH));
 
+
         // Aggregate mode: build result.html from all per-canton JSONs written by the
         // parallel canton lambdas. Invoked as the final Step Function step.
         if ("aggregate".equals(input.get("action"))) {

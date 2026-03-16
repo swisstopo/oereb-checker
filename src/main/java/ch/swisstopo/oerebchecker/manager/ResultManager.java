@@ -1,5 +1,6 @@
 package ch.swisstopo.oerebchecker.manager;
 
+import ch.swisstopo.oerebchecker.results.AvailabilityStatus;
 import ch.swisstopo.oerebchecker.models.Canton;
 import ch.swisstopo.oerebchecker.storage.IStorageProvider;
 import ch.swisstopo.oerebchecker.results.CantonResult;
@@ -12,6 +13,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.utils.StringUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -24,7 +26,14 @@ public class ResultManager {
     private static final String RESULT_HTML_RESOURCE = "ch/swisstopo/oerebchecker/result.html";
     private static final String TEMPLATE_VERSION_META = "oerebchecker-template-version";
 
+    private static final String AVAILABILITY_SECTION_ID = "availability-overview";
+    private static final String AVAILABILITY_LIST_ID = "availability-overview-list";
+
     private record TemplateReadResult(Document document, boolean templateUpgraded) {
+    }
+
+    public static Path getOutputJsonFilePath(Path outputDirectoryPath, Canton canton) {
+        return outputDirectoryPath.resolve("data").resolve(canton.name().toLowerCase() + ".json");
     }
 
     public static void write(IStorageProvider storage, Path outputDirectoryPath, CantonResult cantonResult) {
@@ -38,12 +47,20 @@ public class ResultManager {
             writeHtml(storage, outputDirectoryPath, cantonResult);
         }
 
-        Path outputJsonFilePath = outputDirectoryPath.resolve("data").resolve(cantonResult.getCanton().name().toLowerCase() + ".json");
+        writeJson(storage, outputDirectoryPath, cantonResult);
+    }
+
+    private static void writeJson(IStorageProvider storage, Path outputDirectoryPath, CantonResult cantonResult) {
+
+        Path outputJsonFilePath = getOutputJsonFilePath(outputDirectoryPath, cantonResult.getCanton());
         String resultJson = cantonResult.getAsJsonString();
-        if (resultJson != null) {
-            if (!storage.writeObject(outputJsonFilePath, new ByteArrayInputStream(resultJson.getBytes(StandardCharsets.UTF_8)))) {
-                logger.error("Failed to write json file '{}'", outputJsonFilePath);
-            }
+        if (resultJson == null) {
+            logger.error("Failed to serialize canton result to JSON because it was null: {}", cantonResult);
+            return;
+        }
+
+        if (!storage.writeObject(outputJsonFilePath, new ByteArrayInputStream(resultJson.getBytes(StandardCharsets.UTF_8)))) {
+            logger.error("Failed to write canton result JSON file '{}'", outputJsonFilePath);
         }
     }
 
@@ -80,7 +97,7 @@ public class ResultManager {
 
             try {
                 CantonResult cantonResult = gson.fromJson(new String(data, StandardCharsets.UTF_8), CantonResult.class);
-                writeHtml(htmlPage, cantonResult);
+                writeCantonHtml(htmlPage, cantonResult);
             } catch (Exception e) {
                 logger.error("Failed to deserialize canton result from {}: {}", jsonPath, e.getMessage(), e);
             }
@@ -112,7 +129,7 @@ public class ResultManager {
         ensureStaticAssets(storage, outputDirectoryPath, template.templateUpgraded());
 
         Document htmlPage = template.document();
-        writeHtml(htmlPage, cantonResult);
+        writeCantonHtml(htmlPage, cantonResult);
 
         Element footerPara = htmlPage.selectFirst("footer p");
         if (footerPara != null) {
@@ -123,58 +140,6 @@ public class ResultManager {
         byte[] htmlBytes = htmlPage.outerHtml().getBytes(StandardCharsets.UTF_8);
         if (!storage.writeObject(outputHtmlFilePath, new ByteArrayInputStream(htmlBytes))) {
             logger.error("Failed to write html file '{}'", outputHtmlFilePath);
-        }
-    }
-
-    private static void writeHtml(Document htmlPage, CantonResult cantonResult) {
-        clearCanton(htmlPage, cantonResult.getCanton());
-
-        String placeholderId = getCantonPlaceholderId(cantonResult.getCanton());
-        Element resultPlaceholder = htmlPage.getElementById(placeholderId);
-
-        if (resultPlaceholder != null) {
-            int total = cantonResult.getTotalCount();
-            int successful = cantonResult.getSuccessfulCount();
-            int warningCount = cantonResult.getWarningCount();
-            int errorCount = cantonResult.getErrorCount();
-
-            String statusClass;
-            if (successful != total || errorCount > 0) {
-                statusClass = "has-failures";
-            } else if (warningCount > 0) {
-                statusClass = "has-warnings";
-            } else {
-                statusClass = "all-success";
-            }
-
-            Element details = new Element("details");
-            details.id(placeholderId);
-            details.addClass("canton-section").addClass(statusClass);
-
-            Element summary = new Element("summary");
-            summary.append("<span class='canton-title'>Canton: " + cantonResult.getCanton() + "</span>");
-
-            String stats = "";
-            if (warningCount > 0) {
-                stats += "Warnings: " + warningCount;
-            }
-            if (errorCount > 0) {
-                if (!stats.isEmpty()) {
-                    stats += " | ";
-                }
-                stats += "Errors: " + errorCount;
-            }
-            if (!stats.isEmpty()) {
-                stats += " | ";
-            }
-            stats += "Checks " + successful + " / " + total + " successful";
-
-            summary.append("<span class='canton-stats'>" + stats + "</span>");
-
-            details.appendChild(summary);
-            details.appendChild(cantonResult.getAsHtml());
-
-            resultPlaceholder.replaceWith(details);
         }
     }
 
@@ -229,9 +194,9 @@ public class ResultManager {
 
         try {
             Document doc = Jsoup.parse(
-                new ByteArrayInputStream(chosenBytes),
-                StandardCharsets.UTF_8.name(),
-                "https://example.com/"
+                    new ByteArrayInputStream(chosenBytes),
+                    StandardCharsets.UTF_8.name(),
+                    "https://example.com/"
             );
             return new TemplateReadResult(doc, templateUpgraded);
         } catch (IOException e) {
@@ -243,9 +208,9 @@ public class ResultManager {
     private static String extractTemplateVersion(byte[] htmlBytes) {
         try {
             Document doc = Jsoup.parse(
-                new ByteArrayInputStream(htmlBytes),
-                StandardCharsets.UTF_8.name(),
-                "https://example.com/"
+                    new ByteArrayInputStream(htmlBytes),
+                    StandardCharsets.UTF_8.name(),
+                    "https://example.com/"
             );
             Element meta = doc.selectFirst("meta[name=\"" + TEMPLATE_VERSION_META + "\"]");
             return meta != null ? meta.attr("content") : null;
@@ -299,21 +264,207 @@ public class ResultManager {
         }
     }
 
+
+    private static void writeCantonHtml(Document htmlPage, CantonResult cantonResult) {
+
+        clearCantonHtml(htmlPage, cantonResult.getCanton());
+
+        writeCantonHtmlAvailability(htmlPage, cantonResult);
+        writeCantonHtmlChecks(htmlPage, cantonResult);
+    }
+
+    private static String getCantonAvailabilityItemId(Canton canton) {
+        return canton.name().toLowerCase() + "-availability-item";
+    }
+
     private static String getCantonPlaceholderId(Canton canton) {
         return canton.name().toLowerCase() + "-checkResultPlaceholder";
     }
 
-    private static void clearCanton(Document doc, Canton canton) {
+    private static void clearCantonHtml(Document doc, Canton canton) {
+        String availabilityItemId = getCantonAvailabilityItemId(canton);
+        Element existingAvailabilityItem = doc.getElementById(availabilityItemId);
+
+        if (existingAvailabilityItem != null) {
+            existingAvailabilityItem.replaceWith(createPendingAvailabilityItem(canton, availabilityItemId));
+        }
+
         String placeholderId = getCantonPlaceholderId(canton);
         Element existingSection = doc.getElementById(placeholderId);
 
         if (existingSection != null) {
-            Element pendingDiv = new Element("div");
-            pendingDiv.id(placeholderId);
-            pendingDiv.addClass("canton-section").addClass("disabled");
-            pendingDiv.append("<div class='summary-mock'><span class='canton-title'>Canton: " + canton + "</span><span class='canton-stats'>Pending...</span></div>");
-
-            existingSection.replaceWith(pendingDiv);
+            existingSection.replaceWith(createPendingCantonSection(canton, placeholderId));
         }
+    }
+
+    private static void writeCantonHtmlAvailability(Document htmlPage, CantonResult cantonResult) {
+        Element availabilityList = ensureAvailabilityOverviewList(htmlPage);
+
+        String itemId = getCantonAvailabilityItemId(cantonResult.getCanton());
+        Element existingItem = availabilityList.getElementById(itemId);
+
+        AvailabilityStatus availabilityStatus = cantonResult.getAvailabilityStatus();
+        String statusSymbol = availabilityStatus == AvailabilityStatus.AVAILABLE ? "✔"
+                : availabilityStatus == AvailabilityStatus.UNAVAILABLE ? "✘"
+                : "";
+        String lastCheckText = StringUtils.isNotBlank(cantonResult.getAvailabilityExecutionDate())
+                ? cantonResult.getAvailabilityExecutionDate()
+                : "Pending...";
+
+        String cssClass = availabilityStatus == AvailabilityStatus.AVAILABLE ? "all-success"
+                : availabilityStatus == AvailabilityStatus.UNAVAILABLE ? "has-failures"
+                : "disabled";
+
+        Element item = new Element("div");
+        item.id(itemId);
+        item.addClass("canton-section").addClass(cssClass).addClass("availability-item");
+
+        Element summaryMock = new Element("div");
+        summaryMock.addClass("summary-mock");
+
+        Element title = new Element("span");
+        title.addClass("canton-title");
+        title.text(cantonResult.getCanton().name());
+
+        Element stats = new Element("span");
+        stats.addClass("canton-stats");
+        stats.text(statusSymbol + " Last check: " + lastCheckText);
+
+        summaryMock.appendChild(title);
+        summaryMock.appendChild(stats);
+        item.appendChild(summaryMock);
+
+        if (existingItem != null) {
+            existingItem.replaceWith(item);
+        } else {
+            availabilityList.appendChild(item);
+        }
+    }
+
+    private static void writeCantonHtmlChecks(Document htmlPage, CantonResult cantonResult) {
+
+        if (cantonResult.getExecutionDate() != null) {
+
+            String placeholderId = getCantonPlaceholderId(cantonResult.getCanton());
+            Element resultPlaceholder = htmlPage.getElementById(placeholderId);
+
+            if (resultPlaceholder != null) {
+                int total = cantonResult.getTotalCount();
+                int successful = cantonResult.getSuccessfulCount();
+                int warningCount = cantonResult.getWarningCount();
+                int errorCount = cantonResult.getErrorCount();
+
+                String statusClass;
+                if (successful != total || errorCount > 0) {
+                    statusClass = "has-failures";
+                } else if (warningCount > 0) {
+                    statusClass = "has-warnings";
+                } else {
+                    statusClass = "all-success";
+                }
+
+                Element details = new Element("details");
+                details.id(placeholderId);
+                details.addClass("canton-section").addClass(statusClass);
+
+                Element summary = new Element("summary");
+                summary.append("<span class='canton-title'>Canton: " + cantonResult.getCanton() + "</span>");
+
+                String stats = "";
+                if (warningCount > 0) {
+                    stats += "Warnings: " + warningCount;
+                }
+                if (errorCount > 0) {
+                    if (!stats.isEmpty()) {
+                        stats += " | ";
+                    }
+                    stats += "Errors: " + errorCount;
+                }
+                if (!stats.isEmpty()) {
+                    stats += " | ";
+                }
+                stats += "Checks " + successful + " / " + total + " successful";
+
+                summary.append("<span class='canton-stats'>" + stats + "</span>");
+
+                details.appendChild(summary);
+                details.appendChild(cantonResult.getAsHtml());
+
+                resultPlaceholder.replaceWith(details);
+            }
+        }
+    }
+
+    private static Element createPendingCantonSection(Canton canton, String placeholderId) {
+        Element pendingDiv = new Element("div");
+        pendingDiv.id(placeholderId);
+        pendingDiv.addClass("canton-section").addClass("disabled");
+        pendingDiv.append(
+                "<div class='summary-mock'>" +
+                        "<span class='canton-title'>Canton: " + canton + "</span>" +
+                        "<span class='canton-stats'>Pending...</span>" +
+                        "</div>"
+        );
+        return pendingDiv;
+    }
+
+    private static Element createPendingAvailabilityItem(Canton canton, String availabilityItemId) {
+        Element pendingAvailabilityDiv = new Element("div");
+        pendingAvailabilityDiv.id(availabilityItemId);
+        pendingAvailabilityDiv.addClass("canton-section").addClass("disabled").addClass("availability-item");
+        pendingAvailabilityDiv.append(
+                "<div class='summary-mock'>" +
+                        "<span class='canton-title'>" + canton + "</span>" +
+                        "<span class='canton-stats'>Last check: Pending...</span>" +
+                        "</div>"
+        );
+        return pendingAvailabilityDiv;
+    }
+
+    private static Element ensureAvailabilityOverviewList(Document htmlPage) {
+        Element availabilityList = htmlPage.getElementById("availability-overview-list");
+        if (availabilityList != null) {
+            return availabilityList;
+        }
+
+        Element availabilitySection = new Element("section");
+        availabilitySection.id("availability-overview");
+        availabilitySection.addClass("availability-overview-section");
+
+        Element sectionIntro = new Element("div");
+        sectionIntro.addClass("section-intro");
+
+        Element heading = new Element("h2");
+        heading.text("Availability");
+
+        Element description = new Element("p");
+        description.addClass("meta");
+        description.text("Overview of canton service availability and the last availability check time.");
+
+        sectionIntro.appendChild(heading);
+        sectionIntro.appendChild(description);
+
+        availabilityList = new Element("div");
+        availabilityList.id("availability-overview-list");
+        availabilityList.addClass("availability-overview-list");
+
+        availabilitySection.appendChild(sectionIntro);
+        availabilitySection.appendChild(availabilityList);
+
+        Element reportWrapper = htmlPage.selectFirst(".report-wrapper");
+        if (reportWrapper != null) {
+            Element firstResultsSection = reportWrapper.selectFirst(".results-section");
+            if (firstResultsSection != null) {
+                firstResultsSection.before(availabilitySection);
+            } else {
+                reportWrapper.appendChild(availabilitySection);
+            }
+            return availabilityList;
+        }
+
+        Element body = htmlPage.body();
+        body.prependChild(availabilitySection);
+
+        return availabilityList;
     }
 }

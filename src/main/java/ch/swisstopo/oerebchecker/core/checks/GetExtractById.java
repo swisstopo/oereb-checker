@@ -66,7 +66,6 @@ public class GetExtractById extends Check {
                 canRun = true;
                 result.setUrl(uri);
             } else {
-                result.setUrlString(this.toString());
                 setCannotRunReason(
                     "URI_BUILD_FAILED",
                     "Could not build request URI for GetExtractById (missing/invalid parameters or base URL)."
@@ -141,6 +140,7 @@ public class GetExtractById extends Check {
             GetCapabilitiesConfig cfg = new GetCapabilitiesConfig();
             cfg.FORMAT = ResponseFormat.xml.name();
             cfg.ExpectedStatusCode = 200;
+            cfg.FollowOneRedirect = followOneRedirect;
 
             GetCapabilities check = new GetCapabilities(basicUri, cfg);
             CheckResult capResult = check.run();

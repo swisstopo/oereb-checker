@@ -25,6 +25,8 @@ public class CheckResult {
     public String ExceptionMessage = null;
 
     public String Url;
+    public String RedirectUrl;
+    public Boolean RedirectFollowed = null;
 
     public int StatusCode;
     public boolean StatusCodeCorrect = false;
@@ -64,8 +66,10 @@ public class CheckResult {
         }
     }
 
-    public void setUrlString(String text) {
-        Url = text;
+    public void setRedirectUrl(URI uri) {
+        if(uri != null) {
+            RedirectUrl = uri.toString();
+        }
     }
 
     public Map<String, List<ValidatorMessage>> getValidationMessages() {

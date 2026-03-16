@@ -1,5 +1,6 @@
 package ch.swisstopo.oerebchecker.results;
 
+import ch.swisstopo.oerebchecker.config.models.CantonConfig;
 import ch.swisstopo.oerebchecker.core.validation.MessageSeverity;
 import ch.swisstopo.oerebchecker.core.validation.ValidatorMessage;
 import ch.swisstopo.oerebchecker.models.Canton;
@@ -19,9 +20,14 @@ import java.util.Map;
 
 public class CantonResult {
 
-    private final String configInfo;
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
+    private final String configInfo;
     private final Canton canton;
+
+    private AvailabilityStatus availabilityStatus;
+    private String availabilityExecutionDate;
+
     private final String executionDate;
     private final List<CheckResult> results = new ArrayList<>();
 
@@ -29,14 +35,38 @@ public class CantonResult {
         return canton;
     }
 
+    public AvailabilityStatus getAvailabilityStatus() {
+        return availabilityStatus;
+    }
+
+    public String getAvailabilityExecutionDate() {
+        return availabilityExecutionDate;
+    }
+
+    public String getExecutionDate() {
+        return executionDate;
+    }
+
     public List<CheckResult> getResults() {
         return results;
     }
 
-    public CantonResult(Canton canton, String cantonConfigInfo) {
+    private static String formatDateTime(LocalDateTime date) {
+        if (date == null) {
+            return null;
+        }
+        return date.format(DATE_TIME_FORMATTER);
+    }
+
+    public CantonResult(Canton canton, CantonConfig config, LocalDateTime executionTime) {
         this.canton = canton;
-        configInfo = cantonConfigInfo;
-        executionDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
+        this.configInfo = config != null ? config.toString() : null;
+        this.executionDate = formatDateTime(executionTime);
+    }
+
+    public void setAvailability(AvailabilityStatus status, LocalDateTime executionTime) {
+        this.availabilityStatus = status;
+        this.availabilityExecutionDate = formatDateTime(executionTime);
     }
 
     public void addCheckResult(CheckResult checkResult) {
@@ -98,7 +128,11 @@ public class CantonResult {
             html.append("<div class='card-header'>");
             html.append("<span class='status-icon'>").append(result.Successful ? "✔" : "✘").append("</span>");
             html.append("<span class='url'>");
-            html.append(StringUtils.isNotBlank(result.Url) ? esc(result.Url) : "config is not valid");
+            if (StringUtils.isBlank(result.Url)) {
+                html.append("config is not valid");
+            } else {
+                html.append(esc(result.Url)).append(result.RedirectFollowed != null && result.RedirectFollowed ? " → " + esc(result.RedirectUrl) : "");
+            }
             html.append("</span>");
             html.append("<span class='badge'>HTTP ").append(result.StatusCode).append("</span>");
             html.append("</div>");

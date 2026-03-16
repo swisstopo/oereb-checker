@@ -77,6 +77,7 @@ public class GetExtractByIdConfig extends CheckConfig {
         copy.NUMBER = NUMBER;
 
         copy.Provoke500 = Provoke500;
+        copy.FollowOneRedirect = FollowOneRedirect;
         copy.ExpectedStatusCode = ExpectedStatusCode;
 
         return copy;

@@ -4,11 +4,11 @@ body {
     color: #333;
     background-color: #f4f7f6;
     margin: 0;
-    padding: 10px 2%; /* 2% side margins for full-width feel */
+    padding: 10px 2%;
 }
 
 .report-wrapper {
-    max-width: 100%; /* Changed from 1100px to full width */
+    max-width: 100%;
     background: #fff;
     padding: 15px 20px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -40,18 +40,18 @@ header {
 /* --- OEREB logo sprite cropping (language slices) ---
    Sprite: 1925x196
    DE: 715x196 (x=0)
-   FR: 605x196 (x=715)        (assumption: remaining 1210 split evenly)
+   FR: 605x196 (x=715)
    IT: 605x196 (x=1320)
 */
 .oereb-logo-viewport {
-    height: 50px; /* must match .header-logo height */
+    height: 50px;
     overflow: hidden;
     display: block;
 }
 
 .oereb-logo-sprite {
     height: 100%;
-    width: auto; /* keep original sprite ratio (1925x196) */
+    width: auto;
     display: block;
     transform: translateX(0);
 }
@@ -61,17 +61,13 @@ body.lang-de .oereb-logo-viewport {
     width: 182px;
 }
 
-/* 715*(50/196) */
 body.lang-fr .oereb-logo-viewport {
     width: 154px;
 }
 
-/* 605*(50/196) */
 body.lang-it .oereb-logo-viewport {
     width: 154px;
 }
-
-/* 605*(50/196) */
 
 body.lang-de .oereb-logo-sprite {
     transform: translateX(0);
@@ -81,12 +77,9 @@ body.lang-fr .oereb-logo-sprite {
     transform: translateX(-182.4px);
 }
 
-/* -715*(50/196) */
 body.lang-it .oereb-logo-sprite {
     transform: translateX(-336.7px);
 }
-
-/* -(715+605)*(50/196) */
 
 /* --- Mobile header improvements --- */
 @media (max-width: 600px) {
@@ -97,7 +90,7 @@ body.lang-it .oereb-logo-sprite {
     }
 
     .header-logo {
-        height: 22px; /* slightly smaller on mobile */
+        height: 22px;
         max-width: 45%;
     }
 
@@ -105,22 +98,18 @@ body.lang-it .oereb-logo-sprite {
         height: 22px;
     }
 
-    /* Mobile (22px high) */
     body.lang-de .oereb-logo-viewport {
         width: 80px;
     }
 
-    /* 715*(22/196) */
     body.lang-fr .oereb-logo-viewport {
         width: 68px;
     }
 
-    /* 605*(22/196) */
     body.lang-it .oereb-logo-viewport {
         width: 68px;
     }
 
-    /* 605*(22/196) */
     body.lang-de .oereb-logo-sprite {
         transform: translateX(0);
     }
@@ -129,12 +118,10 @@ body.lang-it .oereb-logo-sprite {
         transform: translateX(-80.2px);
     }
 
-    /* -715*(22/196) */
     body.lang-it .oereb-logo-sprite {
         transform: translateX(-148.2px);
     }
 
-    /* -(715+605)*(22/196) */
     h1 {
         flex: 0 0 100%;
         font-size: 1.2em;
@@ -153,9 +140,9 @@ body.lang-it .oereb-logo-sprite {
 h1 {
     color: #2c3e50;
     margin: 0;
-    font-size: 1.5em; /* Smaller title */
+    font-size: 1.5em;
     text-align: center;
-    flex: 1; /* keeps title centered between the two images */
+    flex: 1;
 }
 
 .meta {
@@ -173,7 +160,7 @@ h1 {
 }
 
 .meta-row .meta {
-    margin: 0; /* override meta default margin so the row aligns nicely */
+    margin: 0;
 }
 
 .meta-download {
@@ -181,10 +168,8 @@ h1 {
     color: #2c3e50;
     text-decoration: none;
     white-space: nowrap;
-
     padding: 2px 10px;
     border-radius: 12px;
-
     background: rgba(44, 62, 80, 0.06);
     border: 1px solid rgba(44, 62, 80, 0.10);
 }
@@ -194,9 +179,63 @@ h1 {
     border-color: rgba(44, 62, 80, 0.18);
 }
 
+/* Section intro */
+.section-intro {
+    margin: 0 0 10px 0;
+}
+
+.section-intro h2 {
+    margin: 0 0 4px 0;
+    color: #2c3e50;
+    font-size: 1.2em;
+}
+
+.results-section {
+    margin-top: 18px;
+}
+
+/* New global availability overview */
+.availability-overview-section {
+    margin-bottom: 18px;
+}
+
+.availability-overview-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 8px;
+}
+
+.availability-item.canton-section {
+    margin-bottom: 0;
+}
+
+.availability-item .summary-mock {
+    min-height: 0;
+    padding: 6px 10px;
+    gap: 10px;
+    align-items: center;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.availability-item .canton-title {
+    font-size: 0.98em;
+    font-weight: 700;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.availability-item .canton-stats {
+    font-size: 0.78em;
+    padding: 1px 8px;
+    white-space: nowrap;
+    text-align: right;
+    margin-left: auto;
+}
+
 /* Canton Section Styling */
 .canton-section {
-    margin-bottom: 10px; /* Tighter spacing between cantons */
+    margin-bottom: 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
     overflow: hidden;
@@ -207,17 +246,18 @@ h1 {
     border-color: #eee;
     background-color: #fafafa;
     cursor: not-allowed;
-    pointer-events: none; /* User cannot click/expand */
+    pointer-events: none;
 }
 
 .summary-mock {
     padding: 8px 15px;
-    background: #bdc3c7; /* Gray background for pending items */
+    background: #bdc3c7;
     color: #7f8c8d;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-left: 6px solid #dcdde1;
+    gap: 12px;
 }
 
 .canton-section.disabled .canton-stats {
@@ -226,7 +266,7 @@ h1 {
 }
 
 .canton-section summary {
-    padding: 8px 15px; /* Thinner header bar */
+    padding: 8px 15px;
     cursor: pointer;
     background: #2c3e50;
     color: #fff;
@@ -235,6 +275,7 @@ h1 {
     align-items: center;
     list-style: none;
     outline: none;
+    gap: 12px;
 }
 
 .canton-section summary::-webkit-details-marker {
@@ -265,6 +306,25 @@ h1 {
     border-left: 6px solid #f0ad4e;
 }
 
+/* matching colors for non-details availability cards */
+.canton-section.all-success .summary-mock {
+    border-left: 6px solid #28a745;
+    background: #f6fcf7;
+    color: #1f5130;
+}
+
+.canton-section.has-failures .summary-mock {
+    border-left: 6px solid #dc3545;
+    background: #fff6f6;
+    color: #7f1d1d;
+}
+
+.canton-section.has-warnings .summary-mock {
+    border-left: 6px solid #f0ad4e;
+    background: #fffaf2;
+    color: #7a5200;
+}
+
 .canton-title {
     font-size: 1.1em;
 }
@@ -274,54 +334,43 @@ h1 {
     padding: 2px 10px;
     border-radius: 12px;
     font-size: 0.85em;
+    text-align: right;
 }
 
 .canton-result-container {
-    padding: 10px 15px; /* Reduced padding inside expanded area */
+    padding: 10px 15px;
     background: #fdfdfd;
 }
 
 /* Config info lines (Canton-Config / Check-Config) */
 .config-line {
     margin: 6px 0 10px 0;
-
-    /* more breathing room on the left so label integrates better */
     padding: 6px 12px 6px 18px;
-
     border: 1px solid #eee;
     background: #fcfcfc;
     border-radius: 4px;
-
-    font-size: 0.76em;     /* smaller + calmer */
+    font-size: 0.76em;
     line-height: 1.35;
-
     display: flex;
     align-items: baseline;
     gap: 8px;
-
-    position: relative;    /* for the icon positioning */
+    position: relative;
 }
 
-/* Icon: placed inside left padding so it feels like a native "meta row" */
 .config-line::before {
-    content: "\2699"; /* ⚙ */
+    content: "\2699";
     position: absolute;
     left: 8px;
-    top: 7px;         /* aligns nicely with first text line */
-
+    top: 7px;
     display: inline-block;
     width: 12px;
     text-align: center;
-
     color: #9aa5ab;
-
-    /* improves chance the glyph actually renders on Windows */
     font-family: "Segoe UI Symbol", "Segoe UI", Arial, sans-serif;
     font-size: 12px;
     line-height: 1;
 }
 
-/* Label: make it look like a subtle “meta tag” */
 .config-label {
     color: #8a949a;
     font-weight: 600;
@@ -329,51 +378,40 @@ h1 {
     text-transform: uppercase;
     font-size: 0.90em;
     white-space: nowrap;
-
-    /* a touch of spacing so it doesn’t visually stick to the icon */
     margin-left: 2px;
 }
 
-/* Value: keep monospace but remove the “pill” feeling */
 .config-value {
     font-family: 'Consolas', monospace;
     font-size: 1em;
     color: #2c3e50;
-
     background: transparent;
     border: 0;
     padding: 0;
-
     white-space: normal;
     overflow-wrap: anywhere;
     word-break: break-word;
 }
 
-/* Canton-level config: keep boxed look */
 .canton-result-container > .config-line {
     margin: 8px 0 12px 0;
 }
 
-/* Check-level config: integrate into the card body (less boxy) */
 .check-card .card-body .config-line {
     margin: 0;
     border-radius: 0;
-
     border-right: 0;
     border-bottom: 0;
     border-top: 0;
-
     background: #fcfcfc;
 }
 
-/* Divider between config and validation grid */
 .check-card .card-body .config-line + .validation-grid {
     border-top: 1px solid #f0f0f0;
     margin-top: 0;
     padding-top: 10px;
 }
 
-/* Mobile stacking */
 @media (max-width: 600px) {
     .config-line {
         flex-direction: column;
@@ -391,7 +429,7 @@ h1 {
     border-radius: 4px;
     margin-bottom: 8px;
     border: 1px solid #eee;
-    background: #fff; /* Ensure white background */
+    background: #fff;
 }
 
 .check-card.success {
@@ -404,7 +442,7 @@ h1 {
 
 .card-header {
     background: #fcfcfc;
-    padding: 6px 12px; /* Thinner card headers */
+    padding: 6px 12px;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -428,7 +466,7 @@ h1 {
 /* Validation Flags Grid */
 .validation-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* Thinner columns */
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 5px;
     padding: 8px 12px;
 }
@@ -441,15 +479,15 @@ h1 {
 .error-details {
     margin: 5px 12px 10px 12px;
     font-size: 0.85em;
-    border: 1px solid #ffcccc; /* Clear red border for errors */
+    border: 1px solid #ffcccc;
     border-radius: 4px;
-    background-color: #fff0f0; /* Light red background */
+    background-color: #fff0f0;
 }
 
 .error-details summary {
     padding: 6px 10px;
     color: #c0392b;
-    background-color: #feebeb; /* Distinct header color for the error section */
+    background-color: #feebeb;
     cursor: pointer;
     font-weight: bold;
     display: list-item;
@@ -457,7 +495,7 @@ h1 {
 }
 
 .error-details[open] summary {
-    border-bottom: 1px solid #ffcccc; /* Line between summary and list when open */
+    border-bottom: 1px solid #ffcccc;
 }
 
 .error-details summary:hover {
@@ -499,7 +537,7 @@ h1 {
 }
 
 .warning-details summary:hover {
-    background-color: #ffec99; /* similar hover behavior to errors */
+    background-color: #ffec99;
 }
 
 .warning-details ul {
@@ -516,4 +554,45 @@ h1 {
 footer {
     margin-top: 20px;
     font-size: 0.75em;
+}
+
+@media (max-width: 900px) {
+    .availability-overview-list {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-mock,
+    .canton-section summary,
+    .meta-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .canton-stats {
+        text-align: left;
+    }
+
+    .availability-item .summary-mock {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .availability-item .canton-stats {
+        margin-left: auto;
+        text-align: right;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 600px) {
+    .availability-item .summary-mock {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .availability-item .canton-stats {
+        margin-left: 0;
+        text-align: left;
+        white-space: normal;
+    }
 }

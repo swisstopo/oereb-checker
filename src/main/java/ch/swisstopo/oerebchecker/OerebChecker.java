@@ -1,6 +1,10 @@
 package ch.swisstopo.oerebchecker;
 
+import ch.swisstopo.oerebchecker.config.models.GetVersionsConfig;
 import ch.swisstopo.oerebchecker.core.checks.*;
+import ch.swisstopo.oerebchecker.models.ResponseFormat;
+import ch.swisstopo.oerebchecker.models.ResponseStatusCode;
+import ch.swisstopo.oerebchecker.results.AvailabilityStatus;
 import ch.swisstopo.oerebchecker.storage.IStorageProvider;
 import ch.swisstopo.oerebchecker.storage.LocalStorageProvider;
 import ch.swisstopo.oerebchecker.storage.S3StorageProvider;
@@ -13,17 +17,22 @@ import ch.swisstopo.oerebchecker.results.CheckResult;
 import ch.swisstopo.oerebchecker.models.Canton;
 import ch.swisstopo.oerebchecker.utils.EnvVars;
 import ch.swisstopo.oerebchecker.utils.RequestHelper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import software.amazon.awssdk.utils.StringUtils;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -82,28 +91,137 @@ public class OerebChecker {
             throw new RuntimeException("Application configuration is empty or could not be parsed. Please check your config source.");
         }
 
-        // 3. Load Metadata
-        MetadataManager.loadMetadata();
+        if ("availability".equals(cli.getAction())) {
+            // 3. Execution Loop
+            configManager.getCantonConfigs().forEach(OerebChecker::processCantonAvailability);
+            logger.info("All availability checks completed.");
 
-        // 4. Execution Loop
-        configManager.getCantonConfigs().forEach(OerebChecker::processCanton);
+        } else {
+            // 3. Load Metadata
+            MetadataManager.loadMetadata();
 
-        logger.info("All checks completed.");
+            // 4. Execution Loop
+            configManager.getCantonConfigs().forEach(OerebChecker::processCanton);
+            logger.info("All checks completed.");
+        }
+    }
+
+    private static boolean hasAvailableHttpResponse(List<CheckResult> results) {
+        return results.stream()
+                .filter(Objects::nonNull)
+                .anyMatch(OerebChecker::hasAvailableHttpResponse);
+    }
+
+    private static boolean hasAvailableHttpResponse(CheckResult result) {
+        return result != null
+                && (result.StatusCode == ResponseStatusCode.OK
+                || result.StatusCode == ResponseStatusCode.NO_CONTENT
+                || result.StatusCode == ResponseStatusCode.SEE_OTHER
+                || result.StatusCode == ResponseStatusCode.INTERNAL_SERVER_ERROR);
+    }
+
+    private static CantonResult loadExistingCantonResult(Path outputDirectoryPath, Canton canton) {
+        Path outputJsonFilePath = ResultManager.getOutputJsonFilePath(outputDirectoryPath, canton);
+
+        if (!storageProvider.exists(outputJsonFilePath)) {
+            return null;
+        }
+
+        byte[] existingJson = storageProvider.readObject(outputJsonFilePath);
+        if (existingJson == null || existingJson.length == 0) {
+            return null;
+        }
+
+        try {
+            Gson gson = new GsonBuilder().create();
+            return gson.fromJson(new String(existingJson, StandardCharsets.UTF_8), CantonResult.class);
+        } catch (Exception e) {
+            logger.warn("Failed to deserialize existing canton result '{}': {}", outputJsonFilePath, e.getMessage());
+            return null;
+        }
+    }
+
+    private static void processCantonAvailability(Canton canton, CantonConfig config) {
+        logger.trace("Processing availability for Canton: {} (cantonConfig={})", canton, config);
+
+        if (StringUtils.isNotBlank(config.ProxyHostname)) {
+            RequestHelper.setProxySettings(config.ProxyHostname, config.ProxyPort, config.ProxyUser, config.ProxyPassword);
+        }
+
+        int threadCount = config.Threads != null ? config.Threads : 1;
+
+        try (ExecutorService executor = Executors.newFixedThreadPool(threadCount)) {
+            URI baseUri = URI.create(config.BasicUrl);
+
+            GetVersionsConfig getVersionsConfig = new GetVersionsConfig();
+            getVersionsConfig.ExpectedStatusCode = ResponseStatusCode.OK;
+            getVersionsConfig.FORMAT = ResponseFormat.xml.name();
+            getVersionsConfig.FollowOneRedirect = true;
+
+            ICheck availabilityCheck = new GetVersions(baseUri, getVersionsConfig);
+            logger.trace("Adding GetVersions as availability task for Canton {} with config: {}", canton, getVersionsConfig);
+
+            String cantonName = canton.name();
+            CompletableFuture<CheckResult> future = CompletableFuture.supplyAsync(() -> {
+                MDC.put("canton", cantonName);
+                try {
+                    return availabilityCheck.run();
+                } finally {
+                    MDC.remove("canton");
+                }
+            }, executor);
+
+            CheckResult checkResult;
+            try {
+                checkResult = future.get();
+            } catch (Exception e) {
+                logger.error("Availability check failed", e);
+                checkResult = null;
+            }
+
+            AvailabilityStatus status = hasAvailableHttpResponse(checkResult)
+                    ? AvailabilityStatus.AVAILABLE
+                    : AvailabilityStatus.UNAVAILABLE;
+
+            logger.info("Canton {} availability result: {} (httpStatusCode={})",
+                    canton,
+                    status,
+                    checkResult != null ? checkResult.StatusCode : null
+            );
+
+            Path outputDirectoryPath = getOutputDirectoryPath(config);
+            CantonResult cantonResult = loadExistingCantonResult(outputDirectoryPath, canton);
+
+            if (cantonResult == null) {
+                cantonResult = new CantonResult(canton, config, null);
+            }
+
+            cantonResult.setAvailability(status, LocalDateTime.now());
+
+            logger.info("Finalizing Canton {} availability. Writing results to '{}' via provider {}",
+                    canton,
+                    ResultManager.getOutputJsonFilePath(outputDirectoryPath, canton),
+                    storageProvider.getClass().getSimpleName()
+            );
+
+            ResultManager.write(
+                    storageProvider,
+                    outputDirectoryPath,
+                    cantonResult
+            );
+        }
     }
 
     private static void processCanton(Canton canton, CantonConfig config) {
 
-        logger.trace("Processing Canton: {} (cantonConfig={})", canton, config.toString());
+        logger.trace("Processing Canton {} (cantonConfig={})", canton, config.toString());
 
         // Proxy Settings
         if (StringUtils.isNotBlank(config.ProxyHostname)) {
             RequestHelper.setProxySettings(config.ProxyHostname, config.ProxyPort, config.ProxyUser, config.ProxyPassword);
         }
 
-        int threadCount = 1;
-        if (config.Threads != null) {
-            threadCount = config.Threads;
-        }
+        int threadCount = config.Threads != null ? config.Threads : 1;
 
         try (ExecutorService executor = Executors.newFixedThreadPool(threadCount)) {
             URI baseUri = URI.create(config.BasicUrl);
@@ -153,20 +271,27 @@ public class OerebChecker {
 
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-            CantonResult result = new CantonResult(canton, config.toString());
+            LocalDateTime executionTime = LocalDateTime.now();
+            CantonResult cantonResult = new CantonResult(canton, config, executionTime);
 
             futures.forEach(f -> {
                 try {
-                    result.addCheckResult(f.get());
+                    cantonResult.addCheckResult(f.get());
                 } catch (Exception e) {
                     logger.error("Check failed", e);
                 }
             });
 
-            Map<CheckStatus, Long> byStatus = result.getResults().stream()
+            AvailabilityStatus status = hasAvailableHttpResponse(cantonResult.getResults())
+                    ? AvailabilityStatus.AVAILABLE
+                    : AvailabilityStatus.UNAVAILABLE;
+
+            cantonResult.setAvailability(status, executionTime);
+
+            Map<CheckStatus, Long> byStatus = cantonResult.getResults().stream()
                     .collect(Collectors.groupingBy(
-                        r -> r.ExecutionStatus != null ? r.ExecutionStatus : CheckStatus.NOT_STARTED,
-                        Collectors.counting()
+                            r -> r.ExecutionStatus != null ? r.ExecutionStatus : CheckStatus.NOT_STARTED,
+                            Collectors.counting()
                     ));
 
             long executed = byStatus.getOrDefault(CheckStatus.EXECUTED, 0L);
@@ -175,18 +300,22 @@ public class OerebChecker {
 
             logger.info("Canton {} summary: total={}, executed={}, successful={}, warnings={}, skipped={}, failed={}",
                     canton,
-                    result.getResults().size(),
+                    cantonResult.getResults().size(),
                     executed,
-                    result.getSuccessfulCount(),
-                    result.getWarningCount(),
+                    cantonResult.getSuccessfulCount(),
+                    cantonResult.getWarningCount(),
                     skipped,
                     failed
             );
 
             Path outputDirectoryPath = getOutputDirectoryPath(config);
-            logger.info("Finalizing Canton {}. Writing results to {} via provider {}", canton, outputDirectoryPath, storageProvider.getClass().getSimpleName());
+            logger.info("Finalizing Canton {}. Writing results to '{}' via provider {}",
+                    canton,
+                    outputDirectoryPath,
+                    storageProvider.getClass().getSimpleName()
+            );
 
-            ResultManager.write(storageProvider, outputDirectoryPath, result);
+            ResultManager.write(storageProvider, outputDirectoryPath, cantonResult);
         }
     }
 
