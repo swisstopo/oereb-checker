@@ -33,6 +33,11 @@ import java.util.*;
 public class GetExtractById extends Check {
     protected static final Logger logger = LoggerFactory.getLogger(GetExtractById.class);
 
+    private static final List<String> titleMismatchWarningTopicCodes = List.of(
+            "ch.Nutzungsplanung",
+            "ch.Waldabstandslinien"
+    );
+
     private final URI basicUri;
     private final GetExtractByIdConfig config;
 
@@ -117,7 +122,7 @@ public class GetExtractById extends Check {
                 requestParams.put("EGRID", config.EGRID);
             }
 
-            if(!requestParams.containsKey("EGRID") &&
+            if (!requestParams.containsKey("EGRID") &&
                     !requestParams.containsKey("IDENTDN") &&
                     !requestParams.containsKey("NUMBER")) {
 
@@ -788,15 +793,17 @@ public class GetExtractById extends Check {
                                 // Not contained => ERROR (after cleaning expected)
                                 titleIsValid = false;
                                 String msg = "Theme '" + code + "': title does not contain expected federal template text for language '" + lang + "'.";
-                                result.addMessage("Topic Validation",
-                                        ValidatorMessage.error(
-                                                "Topic Validation",
-                                                "TOPIC_TITLE_MISMATCH",
-                                                msg + " Expected(clean): '" + expectedClean + "', Found: '" + text + "'",
-                                                xpath.getPath(node),
-                                                null
-                                        )
-                                );
+
+                                String category = "Topic Validation";
+                                String flavour = "Topic Validation";
+                                String rule = "TOPIC_TITLE_MISMATCH";
+                                String message = msg + " Expected(clean): '" + expectedClean + "', Found: '" + text + "'";
+
+                                if (titleMismatchWarningTopicCodes.contains(code)) {
+                                    result.addMessage(category, ValidatorMessage.warning(flavour, rule, message, xpath.getPath(node), null));
+                                } else {
+                                    result.addMessage(category, ValidatorMessage.error(flavour, rule, message, xpath.getPath(node), null));
+                                }
                                 logger.debug(msg);
                             }
                         } else {
