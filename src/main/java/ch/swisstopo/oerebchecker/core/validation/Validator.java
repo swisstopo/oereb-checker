@@ -144,7 +144,7 @@ public class Validator {
 
             List<ValidationResult> validationResults = validator.validateAll(parser);
             for (ValidationResult validationResult : validationResults) {
-                if (validationResult.isCompliant()) { // File is a valid
+                if (validationResult.isCompliant()) { // File is valid
                     result.IsValid = true;
                 } else {
                     List<TestAssertion> testAssertions = validationResult.getTestAssertions();

@@ -32,7 +32,7 @@ public class CheckResult {
     public boolean StatusCodeCorrect = false;
 
     public String ContentType;
-    public Boolean ContentTypeCorrect = false;
+    public Boolean ContentTypeCorrect = null;
 
     public Boolean XmlIsValid = null;
     public Boolean PdfIsValid = null;

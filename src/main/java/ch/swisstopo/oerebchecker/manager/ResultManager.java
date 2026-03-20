@@ -106,7 +106,7 @@ public class ResultManager {
         Element footerPara = htmlPage.selectFirst("footer p");
         if (footerPara != null) {
             int currentYear = java.time.LocalDate.now().getYear();
-            footerPara.text("© " + currentYear + " Swisstopo - OeREB Checker");
+            footerPara.text("© " + currentYear + " Swisstopo - ÖREB Checker");
         }
 
         byte[] htmlBytes = htmlPage.outerHtml().getBytes(StandardCharsets.UTF_8);
@@ -134,7 +134,7 @@ public class ResultManager {
         Element footerPara = htmlPage.selectFirst("footer p");
         if (footerPara != null) {
             int currentYear = java.time.LocalDate.now().getYear();
-            footerPara.text("© " + currentYear + " Swisstopo - OeREB Checker");
+            footerPara.text("© " + currentYear + " Swisstopo - ÖREB Checker");
         }
 
         byte[] htmlBytes = htmlPage.outerHtml().getBytes(StandardCharsets.UTF_8);
