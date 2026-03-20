@@ -1022,7 +1022,7 @@ public class GetExtractById extends Check {
                 result.addMessage("Topic Validation",
                     ValidatorMessage.error(
                         "Topic Validation",
-                        "LEGALPROVISIONS_MISSING",
+                        "LEGAL_PROVISIONS_MISSING",
                         msg,
                         query,
                         null
@@ -1097,7 +1097,7 @@ public class GetExtractById extends Check {
                 return false;
             }
 
-            List<V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar> glossars = new ArrayList<>(MetadataManager.getV20Konfiguration().getV20KonfigurationGlossar());
+            List<V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar> federalGlossars = new ArrayList<>(MetadataManager.getV20Konfiguration().getV20KonfigurationGlossar());
 
             boolean isValid = true;
             for (Node glossaryNode : glossaryNodes) {
@@ -1112,13 +1112,11 @@ public class GetExtractById extends Check {
                 String titleText = xpath.getString(titleLocalisedTextNode, "ed:Text");
 
                 V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar existingGlossar = null;
-                String expectedTitleForMatch = null;
 
-                // Find matching glossary entry:
-                // - exact match => OK
-                // - extract contains template => WARNING (addition), but still match
-                for (V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar glossar : glossars) {
-                    var templateTitles = glossar.getTitel()
+                // Find a matching glossary entry:
+                // - exact matches => OK
+                for (V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar federalGlossar : federalGlossars) {
+                    var templateTitles = federalGlossar.getTitel()
                             .getLocalisationCHV1MultilingualText()
                             .getLocalisedText()
                             .getLocalisationCHV1LocalisedText();
@@ -1126,39 +1124,22 @@ public class GetExtractById extends Check {
                     var match = templateTitles.stream()
                             .filter(x -> x.getLanguage().equals(titleLanguage))
                             .filter(x -> x.getText() != null && titleText != null)
-                            .filter(x -> titleText.equals(x.getText()) || titleText.contains(x.getText()))
+                            .filter(x -> titleText.equals(x.getText()))
                             .findFirst();
 
                     if (match.isPresent()) {
-                        existingGlossar = glossar;
-                        expectedTitleForMatch = match.get().getText();
+                        existingGlossar = federalGlossar;
                         break;
                     }
                 }
 
+                // additional canton glossary entry -> skip check
                 if (existingGlossar == null) {
+                    logger.trace("Ignoring additional glossary entry which is not defined in federal template. Title language='{}', title='{}'", titleLanguage, titleText);
                     continue;
                 } else {
-                    // If it matched by "contains" (not equals), this is an addition -> WARNING
-                    if (expectedTitleForMatch != null && titleText != null && !titleText.equals(expectedTitleForMatch) && titleText.contains(expectedTitleForMatch)) {
-                        String location = xpath.getPath(titleLocalisedTextNode);
-                        String msg = "Glossary title contains template text but has additions (" + titleLanguage + "). "
-                                + "Expected contained: '" + expectedTitleForMatch + "', Found: '" + titleText + "'";
-
-                        result.addMessage("Glossary Validation",
-                            ValidatorMessage.warning(
-                                "Glossary Validation",
-                                "GLOSSARY_TITLE_EXTENDED",
-                                msg,
-                                location,
-                                null
-                            )
-                        );
-                    }
-                    glossars.remove(existingGlossar);
+                    federalGlossars.remove(existingGlossar);
                 }
-
-                Optional<V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar.Titel.LocalisationCHV1MultilingualText.LocalisedText.LocalisationCHV1LocalisedText> localisationCHV1LocalisedText;
 
                 // Check Title Translations
                 List<Node> titleLocalisedTextNodes = xpath.getNodesList(glossary, "ed:Title/ed:LocalisedText");
@@ -1183,8 +1164,7 @@ public class GetExtractById extends Check {
                             } else if (text.contains(expected)) {
                                 // Addition => WARNING
                                 String location = xpath.getPath(localisedText);
-                                String msg = "Title text contains template text but has additions (" + language + "). "
-                                        + "Expected contained: '" + expected + "', Found: '" + text + "'";
+                                String msg = "Title text contains template text but has additions (" + language + "). Expected contained: '" + expected + "', Found: '" + text + "'";
 
                                 result.addMessage("Glossary Validation",
                                     ValidatorMessage.warning(
@@ -1235,8 +1215,6 @@ public class GetExtractById extends Check {
                     }
                 }
 
-                Optional<V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar.Inhalt.LocalisationCHV1MultilingualMText.LocalisedText.LocalisationCHV1LocalisedMText> localisationCHV1LocalisedMText;
-
                 // --- Check Content Translations ---
                 List<Node> contentLocalisedTextNodes = xpath.getNodesList(glossary, "ed:Content/ed:LocalisedText");
                 for (Node localisedText : contentLocalisedTextNodes) {
@@ -1260,8 +1238,7 @@ public class GetExtractById extends Check {
                             } else if (text.contains(expected)) {
                                 // Addition => WARNING
                                 String location = xpath.getPath(localisedText);
-                                String msg = "Content text contains template text but has additions (" + language + "). "
-                                        + "Expected contained: '" + expected + "', Found: '" + text + "'";
+                                String msg = "Content text contains template text but has additions (" + language + "). Expected contained: '" + expected + "', Found: '" + text + "'";
 
                                 result.addMessage("Glossary Validation",
                                     ValidatorMessage.warning(
@@ -1314,8 +1291,8 @@ public class GetExtractById extends Check {
             }
 
             // Missing template entries in extract -> still ERROR (unchanged)
-            if (!glossars.isEmpty()) {
-                for (V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar glossar : glossars) {
+            if (!federalGlossars.isEmpty()) {
+                for (V20Texte.DATASECTION.V20Konfiguration.V20KonfigurationGlossar glossar : federalGlossars) {
                     String titleLanguage = glossar.getTitel().getLocalisationCHV1MultilingualText().getLocalisedText().getLocalisationCHV1LocalisedText().getFirst().getLanguage();
                     String title = glossar.getTitel().getLocalisationCHV1MultilingualText().getLocalisedText().getLocalisationCHV1LocalisedText().getFirst().getText();
 
