@@ -320,13 +320,13 @@ public class GetExtractById extends Check {
             int geometryCount = xpath.getCount(doc, "//*[local-name()='Point' or local-name()='Line' or local-name()='Surface']");
 
             if (config.GEOMETRY != null && config.GEOMETRY) {
-                int restrictionCount = xpath.getCount(doc, "//ed:RestrictionOnLandownership");
-                if (geometryCount != restrictionCount) {
+                int restrictionsWithoutGeometry = xpath.getCount(doc, "//ed:RestrictionOnLandownership[not(.//*[local-name()='Point' or local-name()='Line' or local-name()='Surface'])]");
+                if (restrictionsWithoutGeometry > 0) {
                     result.addMessage("Parameter Validation",
                             ValidatorMessage.error(
                                     "Parameter Validation",
                                     "PARAM_GEOMETRY_TRUE_COUNT_MISMATCH",
-                                    "GEOMETRY=true: expected " + restrictionCount + " geometries (one per restriction) but found " + geometryCount + ".",
+                                    "GEOMETRY=true: " + restrictionsWithoutGeometry + " restriction(s) contain no geometry.",
                                     "GEOMETRY parameter / //ed:RestrictionOnLandownership",
                                     null
                             )

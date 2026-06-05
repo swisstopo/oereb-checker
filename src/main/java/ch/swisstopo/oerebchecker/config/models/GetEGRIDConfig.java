@@ -23,7 +23,7 @@ public class GetEGRIDConfig extends CheckConfig {
         if (StringUtils.isNotBlank(IDENTDN) && StringUtils.isNotBlank(NUMBER)) {
             variants++;
         }
-        if (POSTALCODE != null && StringUtils.isNotBlank(LOCALISATION) && StringUtils.isNotBlank(NUMBER)) {
+        if (POSTALCODE != null && StringUtils.isNotBlank(LOCALISATION)) {
             variants++;
         }
         if (StringUtils.isNotBlank(GNSS)) {
