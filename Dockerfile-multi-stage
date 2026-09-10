@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM maven:3.9.6-amazoncorretto-21 AS build
+FROM maven:3.9.11-amazoncorretto-25-alpine AS build
 WORKDIR /build
 
 # Copy pom.xml from the project root
@@ -14,7 +14,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests -B
 
 # Stage 2: Runtime
-FROM amazoncorretto:21-alpine
+FROM amazoncorretto:25-alpine
 WORKDIR /app
 
 # Setup security
