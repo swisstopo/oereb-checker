@@ -1,4 +1,4 @@
-FROM amazoncorretto:21-alpine
+FROM amazoncorretto:25-alpine
 
 # Best Practice: Set a working directory to avoid using absolute paths everywhere
 WORKDIR /app

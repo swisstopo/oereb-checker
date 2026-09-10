@@ -21,6 +21,7 @@ import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedList;
@@ -132,39 +133,55 @@ public class Validator {
 
         ValidatorResult result = new ValidatorResult();
 
-        // https://docs.verapdf.org/develop/
-        List<PDFAFlavour> flavours = new LinkedList<>();
-        flavours.add(PDFAFlavour.PDFA_1_A);
-        flavours.add(PDFAFlavour.PDFA_1_B);
-        flavours.add(PDFAFlavour.PDFA_2_A);
-
-        try (VeraPDFFoundry foundry = Foundries.defaultInstance();
-             PDFAParser parser = foundry.createParser(inputStream);
-             PDFAValidator validator = foundry.createValidator(getPdfValidatorConfig(), flavours)) {
-
-            List<ValidationResult> validationResults = validator.validateAll(parser);
-            for (ValidationResult validationResult : validationResults) {
-                if (validationResult.isCompliant()) { // File is valid
-                    result.IsValid = true;
-                } else {
-                    List<TestAssertion> testAssertions = validationResult.getTestAssertions();
-                    for (TestAssertion testAssertion : testAssertions) {
-                        result.addMessage(validationResult.getPDFAFlavour().toString(), testAssertion.getRuleId().toString(), testAssertion.getMessage(), testAssertion.getLocation().toString());
-                    }
-                    result.IsValid = result.IsValid != null && result.IsValid;
-                }
-            }
-        } catch (Exception ex) {
+        byte[] pdfBytes;
+        try {
+            pdfBytes = inputStream.readAllBytes();
+        } catch (IOException e) {
             result.IsValid = false;
-            logger.error("Error: {}", ex.getMessage(), ex);
+            logger.error("Error reading PDF input stream: {}", e.getMessage(), e);
+            result.addMessage("PDF", "Open/Parse", "PDF could not be opened/parsed for validation (file may be corrupted or not a PDF).", e.getMessage());
+            return result;
+        }
 
-            String message =  ex.getCause() == null? ex.getMessage() : ex.getCause().getMessage();
-            result.addMessage(
-                    "PDF",
-                    "Open/Parse",
-                    "PDF could not be opened/parsed for validation (file may be corrupted or not a PDF).",
-                    message
-            );
+        // https://docs.verapdf.org/develop/
+        // PDFA_1_A & PDFA_1_B are validated together in pass 1; PDFA_2_A separately in pass 2.
+        List<List<PDFAFlavour>> validationPasses = List.of(
+                List.of(PDFAFlavour.PDFA_1_A, PDFAFlavour.PDFA_1_B),
+                List.of(PDFAFlavour.PDFA_2_A)
+        );
+
+        outer:
+        for (List<PDFAFlavour> flavours : validationPasses) {
+            try (VeraPDFFoundry foundry = Foundries.defaultInstance();
+                 PDFAParser parser = foundry.createParser(new ByteArrayInputStream(pdfBytes));
+                 PDFAValidator validator = foundry.createValidator(getPdfValidatorConfig(), flavours)) {
+
+                List<ValidationResult> validationResults = validator.validateAll(parser);
+                for (ValidationResult validationResult : validationResults) {
+                    if (validationResult.isCompliant()) {
+                        result.IsValid = true;
+                        result.Messages.clear();
+                        break outer;
+                    } else {
+                        List<TestAssertion> testAssertions = validationResult.getTestAssertions();
+                        for (TestAssertion testAssertion : testAssertions) {
+                            result.addMessage(validationResult.getPDFAFlavour().toString(), testAssertion.getRuleId().toString(), testAssertion.getMessage(), testAssertion.getLocation().toString());
+                        }
+                        result.IsValid = result.IsValid != null && result.IsValid;
+                    }
+                }
+            } catch (Exception ex) {
+                result.IsValid = false;
+                logger.error("Error: {}", ex.getMessage(), ex);
+
+                String message = ex.getCause() == null ? ex.getMessage() : ex.getCause().getMessage();
+                result.addMessage(
+                        "PDF",
+                        "Open/Parse",
+                        "PDF could not be opened/parsed for validation (file may be corrupted or not a PDF).",
+                        message
+                );
+            }
         }
 
         return result;
