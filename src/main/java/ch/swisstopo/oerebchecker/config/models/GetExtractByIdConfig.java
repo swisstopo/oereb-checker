@@ -35,28 +35,40 @@ public class GetExtractByIdConfig extends CheckConfig {
         return variants == 1;
     }
 
-    public List<GetExtractByIdConfig> getPossibleConfigs() {
+    public List<GetExtractByIdConfig> getPossibleConfigs(List<String> capabilitiesLanguages) {
         List<GetExtractByIdConfig> possibleConfigs = new ArrayList<>();
         possibleConfigs.add(getCopy());
 
-        ResponseFormat responseFormat = ResponseFormat.valueOf(FORMAT);
-        if (!Provoke500 && responseFormat == ResponseFormat.xml) {
-            GetExtractByIdConfig copy;
-            if (GEOMETRY == null) {
-                copy = getCopy();
-                copy.GEOMETRY = true;
-                possibleConfigs.add(copy);
-                copy = getCopy();
-                copy.GEOMETRY = false;
-                possibleConfigs.add(copy);
+        if (!Provoke500) {
+
+            if (StringUtils.isBlank(LANG) && capabilitiesLanguages != null) {
+                GetExtractByIdConfig copy;
+                for (String lang : capabilitiesLanguages) {
+                    copy = getCopy();
+                    copy.LANG = lang;
+                    possibleConfigs.add(copy);
+                }
             }
-            if (WITHIMAGES == null) {
-                copy = getCopy();
-                copy.WITHIMAGES = true;
-                possibleConfigs.add(copy);
-                copy = getCopy();
-                copy.WITHIMAGES = false;
-                possibleConfigs.add(copy);
+
+            ResponseFormat responseFormat = ResponseFormat.valueOf(FORMAT);
+            if (responseFormat == ResponseFormat.xml) {
+                GetExtractByIdConfig copy;
+                if (GEOMETRY == null) {
+                    copy = getCopy();
+                    copy.GEOMETRY = true;
+                    possibleConfigs.add(copy);
+                    copy = getCopy();
+                    copy.GEOMETRY = false;
+                    possibleConfigs.add(copy);
+                }
+                if (WITHIMAGES == null) {
+                    copy = getCopy();
+                    copy.WITHIMAGES = true;
+                    possibleConfigs.add(copy);
+                    copy = getCopy();
+                    copy.WITHIMAGES = false;
+                    possibleConfigs.add(copy);
+                }
             }
         }
         return possibleConfigs;

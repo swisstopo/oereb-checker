@@ -2,7 +2,6 @@ package ch.swisstopo.oerebchecker.core.checks;
 
 import ch.swisstopo.oereb.V20Texte;
 import ch.swisstopo.oereb.V20Themen;
-import ch.swisstopo.oerebchecker.config.models.GetCapabilitiesConfig;
 import ch.swisstopo.oerebchecker.config.models.GetExtractByIdConfig;
 import ch.swisstopo.oerebchecker.core.validation.ValidatorMessage;
 import ch.swisstopo.oerebchecker.manager.FederalTopicManager;
@@ -10,7 +9,6 @@ import ch.swisstopo.oerebchecker.manager.MetadataManager;
 import ch.swisstopo.oerebchecker.models.FederalTopicInformation;
 import ch.swisstopo.oerebchecker.models.ResponseFormat;
 import ch.swisstopo.oerebchecker.models.ResponseStatusCode;
-import ch.swisstopo.oerebchecker.results.CheckResult;
 import ch.swisstopo.oerebchecker.utils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +42,8 @@ public class GetExtractById extends Check {
     private final HttpClient client = RequestHelper.getSharedHttpClient();
 
     private final Map<String, HttpResponse<InputStream>> requestedResponseMap = new HashMap<>();
+
+    private boolean capabilitiesMessagesReported = false;
 
 
     public GetExtractById(URI basicUri, GetExtractByIdConfig config) {
@@ -137,73 +137,16 @@ public class GetExtractById extends Check {
     }
 
     private CapabilitiesData getCapabilitiesData() {
-        return CapabilitiesRegistry.getOrLoad(basicUri, this::loadCapabilitiesForThisEndpoint);
-    }
+        CapabilitiesLoadResult loaded = CapabilitiesLoader.load(basicUri, followOneRedirect);
 
-    private CapabilitiesData loadCapabilitiesForThisEndpoint() {
-        try {
-            GetCapabilitiesConfig cfg = new GetCapabilitiesConfig();
-            cfg.FORMAT = ResponseFormat.xml.name();
-            cfg.ExpectedStatusCode = 200;
-            cfg.FollowOneRedirect = followOneRedirect;
-
-            GetCapabilities check = new GetCapabilities(basicUri, cfg);
-            CheckResult capResult = check.run();
-
-            if (capResult.ExecutionStatus == CheckStatus.SKIPPED) {
-                result.addMessage("Capabilities Validation",
-                        ValidatorMessage.error(
-                                "Capabilities Validation",
-                                "CAPABILITIES_LOAD_SKIPPED",
-                                "GetCapabilities was skipped and did not return a valid result.",
-                                capResult.Url,
-                                capResult.NotExecutedReason
-                        )
-                );
-                return CapabilitiesData.empty();
-            }
-
-            if (capResult.ExecutionStatus == CheckStatus.FAILED) {
-                result.addMessage("Capabilities Validation",
-                        ValidatorMessage.error(
-                                "Capabilities Validation",
-                                "CAPABILITIES_LOAD_FAILED",
-                                "GetCapabilities execution failed.",
-                                capResult.Url,
-                                (capResult.ExceptionType != null ? capResult.ExceptionType + ": " : "") + capResult.ExceptionMessage
-                        )
-                );
-                return CapabilitiesData.empty();
-            }
-
-            if (capResult.StatusCode != ResponseStatusCode.OK || capResult.XmlIsValid == null || !capResult.XmlIsValid) {
-                result.addMessage("Capabilities Validation",
-                        ValidatorMessage.error(
-                                "Capabilities Validation",
-                                "CAPABILITIES_RESPONSE_INVALID",
-                                "GetCapabilities response was not OK or XML validation failed.",
-                                capResult.Url,
-                                "HTTP " + capResult.StatusCode + ", XmlIsValid=" + capResult.XmlIsValid
-                        )
-                );
-                return CapabilitiesData.empty();
-            }
-
-            return check.getParsedCapabilities();
-
-        } catch (Exception e) {
-            logger.error("Failed to load capabilities: {}", e.getMessage(), e);
-            result.addMessage("Capabilities Validation",
-                    ValidatorMessage.error(
-                            "Capabilities Validation",
-                            "CAPABILITIES_LOAD_EXCEPTION",
-                            "Failed to load or parse GetCapabilities due to an unexpected exception.",
-                            (uri != null ? uri.toString() : null),
-                            e.getMessage()
-                    )
-            );
-            return CapabilitiesData.empty();
+        // The lookup is shared per endpoint, so its diagnostics have to be replayed here to end up
+        // in this check's result. Several checks ask for the capabilities, hence the guard.
+        if (!capabilitiesMessagesReported) {
+            capabilitiesMessagesReported = true;
+            loaded.messages().forEach(message -> result.addMessage(CapabilitiesLoader.CATEGORY, message));
         }
+
+        return loaded.data();
     }
 
 

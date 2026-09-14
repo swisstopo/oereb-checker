@@ -1,5 +1,6 @@
 package ch.swisstopo.oerebchecker;
 
+import ch.swisstopo.oerebchecker.config.models.GetExtractByIdConfig;
 import ch.swisstopo.oerebchecker.config.models.GetVersionsConfig;
 import ch.swisstopo.oerebchecker.core.checks.*;
 import ch.swisstopo.oerebchecker.models.ResponseFormat;
@@ -246,8 +247,9 @@ public class OerebChecker {
                 });
             }
             if (config.GetExtractById != null) {
+                List<String> capabilitiesLanguages = resolveCapabilitiesLanguages(baseUri, config.GetExtractById);
                 config.GetExtractById.stream()
-                        .flatMap(c -> c.getPossibleConfigs().stream())
+                        .flatMap(c -> c.getPossibleConfigs(capabilitiesLanguages).stream())
                         .forEach(pc -> {
                             logger.trace("Adding GetExtractById task for Canton {} with config: {}", canton, pc);
                             taskList.add(new GetExtractById(baseUri, pc));
@@ -317,6 +319,36 @@ public class OerebChecker {
 
             ResultManager.write(storageProvider, outputDirectoryPath, cantonResult);
         }
+    }
+
+    /**
+     * Resolves the languages advertised by GetCapabilities so that GetExtractById configs without an
+     * explicit LANG can be expanded into one variant per language. The lookup is only performed when
+     * a config actually needs it, and it is cached per endpoint, so the checks themselves reuse it
+     * instead of requesting the capabilities again.
+     */
+    private static List<String> resolveCapabilitiesLanguages(URI baseUri, List<GetExtractByIdConfig> configs) {
+        List<GetExtractByIdConfig> needingLanguages = configs.stream()
+                .filter(c -> !c.Provoke500 && StringUtils.isBlank(c.LANG))
+                .toList();
+
+        if (needingLanguages.isEmpty()) {
+            return List.of();
+        }
+
+        // A single lookup is shared per endpoint, so one redirect setting has to win. Follow the
+        // redirect if any config asks for it, as that is the more permissive of the two.
+        boolean followOneRedirect = needingLanguages.stream().anyMatch(c -> c.FollowOneRedirect);
+
+        List<String> languages = CapabilitiesLoader.load(baseUri, followOneRedirect).data().languages();
+
+        if (languages.isEmpty()) {
+            logger.warn("GetCapabilities provided no languages for '{}'. No LANG variants will be generated for GetExtractById.", baseUri);
+        } else {
+            logger.debug("Expanding GetExtractById configs without LANG into the capabilities languages {}.", languages);
+        }
+
+        return languages;
     }
 
     private static Path getOutputDirectoryPath(CantonConfig config) {
