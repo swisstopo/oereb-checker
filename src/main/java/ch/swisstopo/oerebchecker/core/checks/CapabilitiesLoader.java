@@ -26,7 +26,7 @@ public final class CapabilitiesLoader {
     public static CapabilitiesLoadResult load(URI basicUri, boolean followOneRedirect) {
         Objects.requireNonNull(basicUri, "basicUri");
 
-        CompletableFuture<CapabilitiesLoadResult> future = cache.computeIfAbsent(basicUri, _ ->
+        CompletableFuture<CapabilitiesLoadResult> future = cache.computeIfAbsent(basicUri, key ->
                 CompletableFuture.supplyAsync(() -> requestCapabilities(basicUri, followOneRedirect))
         );
 
