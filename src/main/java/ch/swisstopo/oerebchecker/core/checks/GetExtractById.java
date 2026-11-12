@@ -734,7 +734,6 @@ public class GetExtractById extends Check {
                                 logger.debug(msg);
                             } else {
                                 // Not contained => ERROR (after cleaning expected)
-                                titleIsValid = false;
                                 String msg = "Theme '" + code + "': title does not contain expected federal template text for language '" + lang + "'.";
 
                                 String category = "Topic Validation";
@@ -745,6 +744,7 @@ public class GetExtractById extends Check {
                                 if (titleMismatchWarningTopicCodes.contains(code)) {
                                     result.addMessage(category, ValidatorMessage.warning(flavour, rule, message, xpath.getPath(node), null));
                                 } else {
+                                    titleIsValid = false;
                                     result.addMessage(category, ValidatorMessage.error(flavour, rule, message, xpath.getPath(node), null));
                                 }
                                 logger.debug(msg);
