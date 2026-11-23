@@ -40,3 +40,6 @@ build/
 ### Mac OS ###
 .DS_Store
 out/
+src/test/resources/configs/jsons/
+src/test/resources/extracts/pdfs/
+src/test/resources/extracts/xmls/

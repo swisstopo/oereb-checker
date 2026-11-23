@@ -9,6 +9,7 @@ Version    | Who   | Modification
 2022-06-07 | V+D   | German text of 'Reserved zones for power lines with a nominal voltage of 220 kV or higher' adapted
 2022-09-01 | V+D   | New term 'Modifications' introduced in Gloassar
 2025-12-09 | V+D   | Clarification in the description of the topic ‘water space’
+2026-12-01 | V+D   | Adaptation of the description of the topic ‘Groundwater protection areas’ in DE, IT, RM and EN
 -->
 <TRANSFER xmlns="http://www.interlis.ch/INTERLIS2.3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <HEADERSECTION SENDER="swisstopo, Geodesy and Federal Directorate of Cadastral Surveying" VERSION="2.3">
@@ -19,7 +20,7 @@ Version    | Who   | Modification
       <MODEL NAME="OeREBKRMkvs_V2_0" VERSION="2021-04-14" URI="https://models.geo.admin.ch/V_D/OeREB/"/>
     </MODELS>
     <!-- Stand der XML-Datei, Etat du fichier XML, Stato del XML-File -->
-    <COMMENT>"2025-12-09"</COMMENT>
+    <COMMENT>"2026-12-01"</COMMENT>
   </HEADERSECTION>
   <DATASECTION>
     <OeREBKRMkvs_V2_0.Konfiguration BID="ch.admin.v_d.oerebkrmkvs_konfiguration_texte">
@@ -997,7 +998,7 @@ Version    | Who   | Modification
             <LocalisedText>
               <LocalisationCH_V1.LocalisedMText>
                 <Language>de</Language>
-                <Text>Von Kanton festgelegte Areale, die für die künftige Nutzung und Anreicherung von Grundwasservorkommen von Bedeutung sind und in dem keine Bauten und Anlagen erstellt oder Arbeiten ausgeführt werden, die künftige Nutzungs- und Anreicherungsanlagen beeinträchtigen könnten.</Text>
+                <Text>Areale, die für die künftige Nutzung und Anreicherung von Grundwasservorkommen von Bedeutung sind und in dem keine Bauten und Anlagen erstellt oder Arbeiten ausgeführt werden, die künftige Nutzungs- und Anreicherungsanlagen beeinträchtigen könnten.</Text>
               </LocalisationCH_V1.LocalisedMText>
               <LocalisationCH_V1.LocalisedMText>
                 <Language>fr</Language>
@@ -1005,15 +1006,15 @@ Version    | Who   | Modification
               </LocalisationCH_V1.LocalisedMText>
               <LocalisationCH_V1.LocalisedMText>
                 <Language>it</Language>
-                <Text>Area delimitata dai Cantoni, importante per il futuro sfruttamento e l'alimentazione della falda freatica, in cui non possono essere costruiti edifici o impianti né essere eseguiti lavori che possano pregiudicare i futuri impianti di sfruttamento o alimentazione.</Text>
+                <Text>Area importante per il futuro sfruttamento e l'alimentazione della falda freatica, in cui non possono essere costruiti edifici o impianti né essere eseguiti lavori che possano pregiudicare i futuri impianti di sfruttamento o alimentazione.</Text>
               </LocalisationCH_V1.LocalisedMText>
               <LocalisationCH_V1.LocalisedMText>
                 <Language>rm</Language>
-                <Text>Areal determinà dal chantun ch'è d'impurtanza per utilisar e per concentrar en l'avegnir resursas d'aua sutterrana ed en il qual i na dastgan vegnir construids nagins edifizis e stabiliments ed exequidas naginas lavurs che pudessan disturbar en l'avegnir ils stabiliments per utilisar e per concentrar aua sutterrana.</Text>
+                <Text>Areal d'impurtanza per utilisar e per concentrar en l'avegnir resursas d'aua sutterrana ed en il qual i na dastgan vegnir construids nagins edifizis e stabiliments ed exequidas naginas lavurs che pudessan disturbar en l'avegnir ils stabiliments per utilisar e per concentrar aua sutterrana.</Text>
               </LocalisationCH_V1.LocalisedMText>
               <LocalisationCH_V1.LocalisedMText>
                 <Language>en</Language>
-                <Text>The cantons define sites that are of significance in terms of the future use and treatment of groundwater reserves. At these sites, no buildings or installations may be constructed, and no work may be carried out, that could interfere with the future construction of groundwater utilisation and treatment facilities.</Text>
+                <Text>Sites that are of significance in terms of the future use and treatment of groundwater reserves. At these sites, no buildings or installations may be constructed, and no work may be carried out, that could interfere with the future construction of groundwater utilisation and treatment facilities.</Text>
               </LocalisationCH_V1.LocalisedMText>
             </LocalisedText>
           </LocalisationCH_V1.MultilingualMText>
